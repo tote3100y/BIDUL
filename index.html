@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIDUL</title>
-    <!-- PWA 및 아이콘 설정 -->
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon.png?v=3" type="image/png">
-    <link rel="apple-touch-icon" href="icon.png?v=3">
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#ffffff">
 
-    <!-- Ponytail 라이브러리 연동 (GitHub: dietrichgebert/ponytail) -->
+    <!-- Ponytail 라이브러리 연동 -->
     <script src="https://cdn.jsdelivr.net/gh/dietrichgebert/ponytail@main/ponytail.js"></script>
 
     <style>
@@ -22,10 +21,9 @@
             font-family: 'Noto Sans KR', sans-serif;
             background-color: #f4f4f4;
             color: #222;
-            overflow-y: scroll;
         }
 
-        /* 고정 헤더 */
+        /* 고정 헤더 영역 */
         .fixed-header {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -33,7 +31,7 @@
             background: #fff;
         }
 
-        /* 1구역: 로고 + 저장/등록 */
+        /* 1단: 로고 + 저장/등록 */
         .toolbar-row-1 {
             display: flex;
             align-items: center;
@@ -42,40 +40,18 @@
             padding: 0 20px;
             border-bottom: 1px solid #e5e5e5;
         }
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .logo-img {
-            width: 28px;
-            height: 28px;
-            object-fit: cover;
-            border-radius: 0;
-        }
-        .logo-text {
-            font-size: 20px;
-            font-weight: 900;
-            color: #111;
-            letter-spacing: 1px;
-        }
+        .logo-area { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .logo-img { width: 28px; height: 28px; object-fit: cover; }
+        .logo-text { font-size: 20px; font-weight: 900; color: #111; letter-spacing: 1px; }
 
-        .action-buttons { display: flex; gap: 6px; }
         .btn {
-            padding: 6px 16px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            border-radius: 0;
-            border: 1px solid #dcdcdc;
-            font-family: inherit;
+            padding: 6px 16px; font-size: 13px; font-weight: 500;
+            cursor: pointer; border-radius: 0; border: 1px solid #dcdcdc;
         }
-        .btn-save { background: #fff; color: #666; }
+        .btn-save { background: #fff; color: #666; margin-right: 6px; }
         .btn-publish { background: #555; color: #fff; border-color: #555; }
-        .btn-publish:hover { background: #333; }
 
-        /* 2구역: 툴바 아이콘 */
+        /* 2단: 툴 아이콘 (사진, 영상, 링크) */
         .toolbar-row-2 {
             display: flex;
             align-items: center;
@@ -89,19 +65,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 58px;
-            height: 58px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #444;
-            border-radius: 0;
+            width: 58px; height: 58px;
+            background: none; border: none; cursor: pointer; color: #444;
         }
         .tool-btn:hover { background-color: #f9f9f9; }
         .tool-btn svg { width: 22px; height: 22px; margin-bottom: 4px; stroke-width: 1.5; }
         .tool-btn span { font-size: 11px; }
 
-        /* 3구역: 서체, 크기 */
+        /* 3단: 서체/크기 */
         .toolbar-row-3 {
             display: flex;
             align-items: center;
@@ -111,17 +82,12 @@
             gap: 15px;
         }
         .font-select, .size-select {
-            border: none;
+            border: none; outline: none; -webkit-appearance: none;
             background: transparent url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right center;
-            padding-right: 20px;
-            font-size: 13px;
-            color: #555;
-            cursor: pointer;
-            outline: none;
-            -webkit-appearance: none;
+            padding-right: 20px; font-size: 13px; color: #555; cursor: pointer;
         }
 
-        /* 에디터 중앙 종이 배치 */
+        /* 에디터 중앙 종이 스타일 */
         .editor-outer {
             margin-top: 162px;
             padding-bottom: 100px;
@@ -129,10 +95,8 @@
             justify-content: center;
         }
         .editor-paper {
-            width: 820px;
-            min-height: 800px;
-            background: #fff;
-            padding: 60px 80px;
+            width: 820px; min-height: 800px;
+            background: #fff; padding: 60px 80px;
             border: 1px solid #e5e5e5;
             box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
@@ -142,27 +106,28 @@
             width: 100%; border: none; outline: none;
             font-size: 30px; font-weight: 500; color: #111; padding-bottom: 15px;
         }
-        .title-input::placeholder { color: #ccc; }
         .title-line { width: 100%; height: 1px; background: #eee; }
 
         .content-editor {
             width: 100%; min-height: 600px; border: none; outline: none;
-            font-size: 16px; line-height: 1.8; color: #333; word-break: break-all;
+            font-size: 16px; line-height: 1.8; color: #333;
         }
         .content-editor:empty:before { content: attr(data-placeholder); color: #ccc; }
 
-        .video-container { position: relative; width: 100%; margin: 20px 0; background: #000; }
-        .video-container iframe { width: 100%; aspect-ratio: 16 / 9; border: none; }
-        .video-container video { width: 100%; max-height: 500px; display: block; outline: none; }
+        /* 영상/이미지 컨테이너 */
+        .media-container { margin: 25px 0; background: #000; line-height: 0; }
+        .media-container video, .media-container iframe {
+            width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9;
+        }
+        img { max-width: 100%; height: auto; margin: 20px 0; display: block; }
 
-        /* 홈 리스트 */
+        /* 홈 화면 */
         .home-container {
             margin-top: 54px; width: 820px; margin-left: auto; margin-right: auto;
             background: #fff; min-height: 100vh; padding: 40px 60px; border: 1px solid #e5e5e5;
         }
         .post-item { padding: 25px 0; border-bottom: 1px solid #eee; cursor: pointer; }
         .post-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
-        .post-preview { font-size: 14px; color: #666; line-height: 1.5; height: 42px; overflow: hidden; }
 
         /* 모달 */
         .modal-overlay {
@@ -170,7 +135,7 @@
             background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;
         }
         .modal-overlay.show { display: flex; }
-        .modal { background: #fff; padding: 25px; width: 400px; border-radius: 0; }
+        .modal { background: #fff; padding: 25px; width: 400px; }
         .modal-input { width: 100%; padding: 10px; border: 1px solid #ddd; margin: 15px 0; outline: none; }
 
         .hidden { display: none !important; }
@@ -178,30 +143,14 @@
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: #333; color: #fff; padding: 10px 20px; font-size: 13px; z-index: 3000; display: none;
         }
-
-        #installBanner {
-            display: none; position: fixed; bottom: 0; left: 0; right: 0;
-            background: #111; color: #fff; padding: 12px 20px;
-            justify-content: space-between; align-items: center; z-index: 4000;
-        }
-        #installBanner button {
-            background: #fff; color: #111; border: none; padding: 6px 12px;
-            font-weight: bold; cursor: pointer; border-radius: 0;
-        }
     </style>
 </head>
 <body>
-
-    <div id="installBanner">
-        <span>BIDUL을 앱으로 설치하시겠습니까?</span>
-        <button id="installBtn">앱 설치하기</button>
-    </div>
 
     <!-- 에디터 헤더 -->
     <div class="fixed-header hidden" id="writeHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <!-- icon.png 로드 실패 시 예외 처리 -->
                 <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
                 <span class="logo-text">BIDUL</span>
             </div>
@@ -211,18 +160,9 @@
             </div>
         </div>
         <div class="toolbar-row-2">
-            <button class="tool-btn" onclick="insertImage()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
-                <span>사진</span>
-            </button>
-            <button class="tool-btn" onclick="insertVideo()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg>
-                <span>영상</span>
-            </button>
-            <button class="tool-btn" onclick="openLinkModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                <span>링크</span>
-            </button>
+            <button class="tool-btn" onclick="insertImage()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg><span>사진</span></button>
+            <button class="tool-btn" onclick="insertVideo()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg><span>영상</span></button>
+            <button class="tool-btn" onclick="openLinkModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span>링크</span></button>
         </div>
         <div class="toolbar-row-3">
             <select class="font-select" id="fontSelect" onchange="updateStyle()">
@@ -250,7 +190,7 @@
         </div>
     </div>
 
-    <!-- 에디터 작성 영역 -->
+    <!-- 에디터 영역 -->
     <div class="editor-outer hidden" id="writePage">
         <div class="editor-paper">
             <div class="title-area">
@@ -270,7 +210,7 @@
     <!-- 링크 모달 -->
     <div class="modal-overlay" id="linkModal">
         <div class="modal">
-            <h3 style="font-size:16px;">링크 삽입</h3>
+            <h3>링크 삽입</h3>
             <input type="text" class="modal-input" id="linkInput" placeholder="유튜브 주소 또는 웹 링크">
             <div style="display:flex; justify-content:flex-end; gap:8px;">
                 <button class="btn" onclick="closeLinkModal()">취소</button>
@@ -286,21 +226,13 @@
 
     <script>
         let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
-        let ponytailInstance = null;
-
-        // Ponytail 에디터 초기화
+        
+        // Ponytail 초기화
         window.addEventListener('DOMContentLoaded', () => {
-            if (typeof Ponytail !== 'undefined') {
-                try {
-                    ponytailInstance = new Ponytail('#contentEditor');
-                } catch(e) {
-                    console.log('Ponytail initialized in standard mode');
-                }
-            }
+            if (typeof Ponytail !== 'undefined') new Ponytail('#contentEditor');
         });
 
         function goHome() { location.reload(); }
-
         function goWrite() {
             document.getElementById('homeHeader').classList.add('hidden');
             document.getElementById('homePage').classList.add('hidden');
@@ -317,28 +249,15 @@
         function openLinkModal() { document.getElementById('linkModal').classList.add('show'); }
         function closeLinkModal() { document.getElementById('linkModal').classList.remove('show'); }
 
-        function extractYoutubeId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-
         function insertLink() {
             const url = document.getElementById('linkInput').value;
-            const videoId = extractYoutubeId(url);
-            
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            const videoId = (match && match[2].length === 11) ? match[2] : null;
+
             if (videoId) {
-                const origin = window.location.origin;
-                const iframeHtml = `
-                    <div class="video-container" contenteditable="false">
-                        <iframe 
-                            src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(origin)}" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
-                        </iframe>
-                    </div><p><br></p>`;
-                document.execCommand('insertHTML', false, iframeHtml);
+                const html = `<div class="media-container" contenteditable="false"><iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+                document.execCommand('insertHTML', false, html);
             } else {
                 document.execCommand('createLink', false, url);
             }
@@ -351,38 +270,35 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (event) => {
-                const imgHtml = `<img src="${event.target.result}" style="max-width:100%; margin:20px 0;"><p><br></p>`;
-                document.execCommand('insertHTML', false, imgHtml);
-                showToast("사진이 삽입되었습니다.");
+                document.execCommand('insertHTML', false, `<img src="${event.target.result}"><p><br></p>`);
             };
             reader.readAsDataURL(file);
-            e.target.value = '';
         }
 
+        /* 🎥 영상 업로드 개선 (Object URL 방식) */
         function insertVideo() { document.getElementById('videoInput').click(); }
         function handleVideo(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const videoHtml = `
-                    <div class="video-container" contenteditable="false">
-                        <video src="${event.target.result}" controls></video>
-                    </div><p><br></p>`;
-                document.execCommand('insertHTML', false, videoHtml);
-                showToast("영상이 삽입되었습니다.");
-            };
-            reader.readAsDataURL(file);
+
+            // Base64 대신 메모리 주소를 사용하여 성능 최적화
+            const videoUrl = URL.createObjectURL(file); 
+            const html = `
+                <div class="media-container" contenteditable="false">
+                    <video src="${videoUrl}" controls></video>
+                </div><p><br></p>`;
+            
+            document.getElementById('contentEditor').focus();
+            document.execCommand('insertHTML', false, html);
+            showToast("영상이 삽입되었습니다.");
             e.target.value = '';
         }
 
         function savePost() { showToast("임시 저장되었습니다."); }
-
         function publishPost() {
             const title = document.getElementById('titleInput').value;
             const content = document.getElementById('contentEditor').innerHTML;
             if(!title) return alert("제목을 입력하세요.");
-            
             posts.push({ title, content, date: new Date().toLocaleDateString() });
             localStorage.setItem('bidul_posts', JSON.stringify(posts));
             alert("등록되었습니다.");
@@ -402,32 +318,12 @@
             posts.reverse().forEach(p => {
                 const item = document.createElement('div');
                 item.className = 'post-item';
-                item.innerHTML = `<div class="post-title">${p.title}</div><div class="post-preview">${p.content.replace(/<[^>]*>?/gm, '').substring(0,100)}...</div>`;
+                item.innerHTML = `<div class="post-title">${p.title}</div>`;
                 listDiv.appendChild(item);
             });
         }
 
-        // 서비스워커 업데이트
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-                reg.update();
-            });
-        }
-
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBanner').style.display = 'flex';
-        });
-
-        document.getElementById('installBtn').addEventListener('click', () => {
-            document.getElementById('installBanner').style.display = 'none';
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-            }
-        });
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(r => r.update());
     </script>
 </body>
 </html>
