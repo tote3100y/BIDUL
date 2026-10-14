@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIDUL</title>
-    <link rel="manifest" href="manifest.json">
+    <!-- 아이콘 설정 -->
     <link rel="icon" href="icon.png" type="image/png">
     <link rel="apple-touch-icon" href="icon.png">
-    <meta name="theme-color" content="#ffffff">
 
     <!-- Ponytail 라이브러리 연동 -->
     <script src="https://cdn.jsdelivr.net/gh/dietrichgebert/ponytail@main/ponytail.js"></script>
@@ -47,11 +46,13 @@
         .btn {
             padding: 6px 16px; font-size: 13px; font-weight: 500;
             cursor: pointer; border-radius: 0; border: 1px solid #dcdcdc;
+            font-family: inherit;
         }
         .btn-save { background: #fff; color: #666; margin-right: 6px; }
         .btn-publish { background: #555; color: #fff; border-color: #555; }
+        .btn-publish:hover { background: #333; }
 
-        /* 2단: 툴 아이콘 (사진, 영상, 링크) */
+        /* 2단: 툴 아이콘 (사진, 영상, 링크 - 위아래 수직 배치) */
         .toolbar-row-2 {
             display: flex;
             align-items: center;
@@ -67,12 +68,13 @@
             justify-content: center;
             width: 58px; height: 58px;
             background: none; border: none; cursor: pointer; color: #444;
+            border-radius: 0;
         }
         .tool-btn:hover { background-color: #f9f9f9; }
         .tool-btn svg { width: 22px; height: 22px; margin-bottom: 4px; stroke-width: 1.5; }
         .tool-btn span { font-size: 11px; }
 
-        /* 3단: 서체/크기 */
+        /* 3단: 서체/크기 (박스 없음) */
         .toolbar-row-3 {
             display: flex;
             align-items: center;
@@ -85,6 +87,7 @@
             border: none; outline: none; -webkit-appearance: none;
             background: transparent url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right center;
             padding-right: 20px; font-size: 13px; color: #555; cursor: pointer;
+            font-family: inherit;
         }
 
         /* 에디터 중앙 종이 스타일 */
@@ -105,16 +108,18 @@
         .title-input {
             width: 100%; border: none; outline: none;
             font-size: 30px; font-weight: 500; color: #111; padding-bottom: 15px;
+            font-family: inherit;
         }
+        .title-input::placeholder { color: #ccc; }
         .title-line { width: 100%; height: 1px; background: #eee; }
 
         .content-editor {
             width: 100%; min-height: 600px; border: none; outline: none;
-            font-size: 16px; line-height: 1.8; color: #333;
+            font-size: 16px; line-height: 1.8; color: #333; word-break: break-all;
         }
         .content-editor:empty:before { content: attr(data-placeholder); color: #ccc; }
 
-        /* 영상/이미지 컨테이너 */
+        /* 미디어 컨테이너 */
         .media-container { margin: 25px 0; background: #000; line-height: 0; }
         .media-container video, .media-container iframe {
             width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9;
@@ -135,7 +140,7 @@
             background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;
         }
         .modal-overlay.show { display: flex; }
-        .modal { background: #fff; padding: 25px; width: 400px; }
+        .modal { background: #fff; padding: 25px; width: 400px; border-radius: 0; }
         .modal-input { width: 100%; padding: 10px; border: 1px solid #ddd; margin: 15px 0; outline: none; }
 
         .hidden { display: none !important; }
@@ -275,13 +280,12 @@
             reader.readAsDataURL(file);
         }
 
-        /* 🎥 영상 업로드 개선 (Object URL 방식) */
+        /* 🎥 영상 업로드 처리 */
         function insertVideo() { document.getElementById('videoInput').click(); }
         function handleVideo(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Base64 대신 메모리 주소를 사용하여 성능 최적화
             const videoUrl = URL.createObjectURL(file); 
             const html = `
                 <div class="media-container" contenteditable="false">
@@ -322,8 +326,6 @@
                 listDiv.appendChild(item);
             });
         }
-
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(r => r.update());
     </script>
 </body>
 </html>
