@@ -1,0 +1,16 @@
+{
+  "name": "BIDUL - 블로그 에디터",
+  "short_name": "BIDUL",
+  "description": "네이버 블로그 스타일의 서체 및 링크 에디터",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f4f4",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3685/3685253.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

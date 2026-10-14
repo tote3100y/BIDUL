@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIDUL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=Gothic+A1:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 전체 바깥쪽 배경색: 네이버 블로그 느낌의 연한 회색 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f5f6;
+            color: #222;
+        }
+
+        /* ===== 상단 고정 헤더 영역 (3구역) ===== */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            /* 3칸 모두 배경 흰색 */
+            background: #ffffff;
+        }
+
+        /* 1구역: 로고 및 저장/등록 (높이 50px) */
+        .toolbar-row-1 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 52px;
+            padding: 0 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #111;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 7px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 0; /* 꼭짓점 각지게 */
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .btn-save {
+            background: #fff;
+            color: #666;
+            border: 1px solid #ccc;
+        }
+
+        .btn-save:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-publish {
+            background: #666;
+            color: #fff;
+            border: 1px solid #666;
+        }
+
+        .btn-publish:hover {
+            background: #444;
+            border-color: #444;
+        }
+
+        /* 2구역: 툴바 아이콘 영역 (높이 72px, 네이버 블로그처럼 아이콘위/글씨아래) */
+        .toolbar-row-2 {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 72px;
+            padding: 0 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border: none; /* 박스선 제거 */
+            cursor: pointer;
+            border-radius: 0;
+            transition: all 0.15s;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .tool-btn:hover {
+            background: #f0f0f0; /* 마우스 올렸을때만 배경 */
+        }
+
+        .tool-btn svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 5px;
+            color: #444;
+            stroke-width: 1.5;
+        }
+
+        .tool-btn span {
+            font-size: 11px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        /* 3구역: 폰트 서체, 사이즈 영역 (높이 40px, 얇게) */
+        .toolbar-row-3 {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            height: 40px;
+            padding: 0 24px;
+            border-bottom: 1px solid #d5d5d5; /* 헤더의 가장 아래 뚜렷한 선 */
+        }
+
+        .font-select, .size-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border: none;
+            background: transparent url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right center;
+            padding: 2px 18px 2px 2px;
+            font-size: 13px;
+            color: #444;
+            cursor: pointer;
+            font-family: 'Noto Sans KR', sans-serif;
+            outline: none;
+        }
+
+        .font-select:hover, .size-select:hover {
+            color: #111;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        }
+
+
+        /* ===== 글 작성(본문) 영역 ===== */
+        .editor-container {
+            /* 헤더 총 높이(52+72+40=164px) 만큼 띄움 */
+            margin-top: 164px; 
+            width: 820px; /* 흰색 종이 부분 너비 */
+            min-height: calc(100vh - 164px);
+            background: #fff; /* 글 쓰는 부분만 흰색 */
+            margin-left: auto;
+            margin-right: auto;
+            padding: 50px 70px 80px; /* 내부 여백 (사진참고) */
+            border-left: 1px solid #e5e5e5;
+            border-right: 1px solid #e5e5e5;
+            box-shadow: 0 0 10px rgba(0,0,0,0.02);
+        }
+
+        .title-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 32px;
+            font-weight: 300;
+            padding: 0 0 20px 0;
+            color: #111;
+            font-family: 'Noto Sans KR', sans-serif;
+            background: transparent;
+        }
+
+        .title-input::placeholder {
+            color: #ccc;
+        }
+
+        .title-divider {
+            width: 100%;
+            height: 1px;
+            background: #eee;
+            margin-bottom: 30px;
+        }
+
+        .content-editor {
+            width: 100%;
+            min-height: 500px;
+            border: none;
+            outline: none;
+            font-size: 15px; 
+            line-height: 1.8;
+            color: #333;
+            font-family: 'Nanum Gothic', sans-serif; 
+            resize: none;
+            background: transparent;
+            overflow-y: auto;
+        }
+
+        .content-editor:empty:before {
+            content: attr(data-placeholder);
+            color: #ccc;
+        }
+
+        .content-editor img {
+            max-width: 100%;
+            margin: 16px 0;
+            display: block;
+        }
+
+        .content-editor iframe {
+            width: 100%;
+            height: 400px;
+            margin: 16px 0;
+            border: none;
+        }
+
+        /* ===== 홈 화면 ===== */
+        .home-container {
+            margin-top: 52px; /* 로고 높이만 */
+            width: 820px;
+            min-height: calc(100vh - 52px);
+            margin-left: auto;
+            margin-right: auto;
+            padding: 40px 70px;
+            background: #fff;
+            border-left: 1px solid #e5e5e5;
+            border-right: 1px solid #e5e5e5;
+        }
+
+        .home-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .home-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111;
+        }
+
+        .post-count {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .post-card {
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            padding: 24px 0;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .post-card:first-child {
+            border-top: 2px solid #333;
+        }
+
+        .post-card:hover {
+            opacity: 0.7;
+        }
+
+        .post-card-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #111;
+            margin-bottom: 10px;
+        }
+
+        .post-card-preview {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-card-meta {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .post-card-thumbnail {
+            width: 120px;
+            height: 80px;
+            object-fit: cover;
+            float: right;
+            margin-left: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 100px 20px;
+            color: #aaa;
+        }
+
+        .btn-write {
+            margin-top: 20px;
+            padding: 10px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #666;
+            color: #fff;
+            border: 1px solid #666;
+            cursor: pointer;
+            border-radius: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .btn-write:hover {
+            background: #444;
+        }
+
+        /* ===== 모달 ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: #fff;
+            padding: 30px;
+            min-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-radius: 0;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #111;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-size: 13px;
+            outline: none;
+            border-radius: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .modal-input:focus { border-color: #666; }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background: #fff;
+            border: 1px solid #ccc;
+            color: #555;
+        }
+
+        .modal-btn-confirm {
+            background: #666;
+            border: 1px solid #666;
+            color: #fff;
+        }
+
+        /* ===== 글 보기 ===== */
+        .view-container {
+            margin-top: 52px;
+            width: 820px;
+            min-height: calc(100vh - 52px);
+            margin-left: auto;
+            margin-right: auto;
+            padding: 50px 70px 80px;
+            background: #fff;
+            border-left: 1px solid #e5e5e5;
+            border-right: 1px solid #e5e5e5;
+        }
+
+        .view-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #111;
+            margin-bottom: 16px;
+        }
+
+        .view-meta {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .view-content {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .view-content img { max-width: 100%; margin: 16px 0; }
+        .view-content iframe { width: 100%; height: 400px; margin: 16px 0; border: none; }
+
+        .view-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .view-back-btn:hover { color: #111; }
+
+        /* 토스트 */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #444;
+            color: #fff;
+            padding: 12px 24px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 3000;
+            transition: transform 0.3s ease;
+            border-radius: 0;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .hidden { display: none !important; }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f5f5f6; }
+        ::-webkit-scrollbar-thumb { background: #ccc; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+    </style>
+</head>
+<body>
+
+    <!-- 홈/보기 화면용 헤더 (영역 1만 표시) -->
+    <div class="fixed-header" id="homeHeader">
+        <div class="toolbar-row-1">
+            <div class="logo" onclick="goHome()">BIDUL</div>
+            <div class="action-buttons">
+                <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 글 작성 화면용 헤더 (3구역 모두 표시) -->
+    <div class="fixed-header hidden" id="writeHeader">
+        <!-- 구역 1 -->
+        <div class="toolbar-row-1">
+            <div class="logo" onclick="goHome()">BIDUL</div>
+            <div class="action-buttons">
+                <button class="btn btn-save" onclick="savePost()">저장</button>
+                <button class="btn btn-publish" onclick="publishPost()">등록</button>
+            </div>
+        </div>
+        
+        <!-- 구역 2 (사진, 링크 - 위아래 배치) -->
+        <div class="toolbar-row-2">
+            <button class="tool-btn" onclick="insertImage()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" stroke-linecap="square"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span>사진</span>
+            </button>
+            <button class="tool-btn" onclick="openLinkModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="square" stroke-linejoin="miter" d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path stroke-linecap="square" stroke-linejoin="miter" d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                <span>링크</span>
+            </button>
+        </div>
+
+        <!-- 구역 3 (서체, 크기) -->
+        <div class="toolbar-row-3">
+            <select class="font-select" id="fontSelect" onchange="changeFont()">
+                <option value="'Nanum Gothic', sans-serif" selected>나눔고딕</option>
+                <option value="'Noto Sans KR', sans-serif">본고딕</option>
+                <option value="'Noto Serif KR', serif">본명조</option>
+                <option value="'Nanum Myeongjo', serif">나눔명조</option>
+                <option value="'Gothic A1', sans-serif">고딕 A1</option>
+            </select>
+            <select class="size-select" id="sizeSelect" onchange="changeFontSize()">
+                <option value="11px">11</option>
+                <option value="13px">13</option>
+                <option value="15px" selected>15</option>
+                <option value="16px">16</option>
+                <option value="19px">19</option>
+                <option value="24px">24</option>
+                <option value="28px">28</option>
+                <option value="32px">32</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 글 보기 화면용 헤더 -->
+    <div class="fixed-header hidden" id="viewHeader">
+        <div class="toolbar-row-1">
+            <div class="logo" onclick="goHome()">BIDUL</div>
+            <div class="action-buttons">
+                <button class="btn btn-save" onclick="goHome()">목록</button>
+                <button class="btn btn-publish" onclick="deletePost()">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 홈 화면 -->
+    <div class="home-container" id="homePage">
+        <div class="home-header">
+            <div class="home-title">전체 글</div>
+            <div class="post-count" id="postCount">0개의 글</div>
+        </div>
+        <div class="post-list" id="postList">
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state-text">아직 작성된 글이 없습니다</div>
+                <button class="btn-write" onclick="goWrite()">첫 번째 글 작성하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 글 작성 화면 -->
+    <div class="editor-container hidden" id="writePage">
+        <input type="text" class="title-input" id="titleInput" placeholder="제목을 입력하세요">
+        <div class="title-divider"></div>
+        <div class="content-editor" id="contentEditor" contenteditable="true" data-placeholder="내용을 입력하세요..."></div>
+    </div>
+
+    <!-- 글 보기 화면 -->
+    <div class="view-container hidden" id="viewPage">
+        <button class="view-back-btn" onclick="goHome()">← 목록으로</button>
+        <div class="view-title" id="viewTitle"></div>
+        <div class="view-meta" id="viewMeta"></div>
+        <div class="view-content" id="viewContent"></div>
+    </div>
+
+    <!-- 링크 모달 -->
+    <div class="modal-overlay" id="linkModal">
+        <div class="modal">
+            <div class="modal-title">링크 삽입</div>
+            <input type="text" class="modal-input" id="linkInput" placeholder="유튜브 링크 또는 웹사이트 주소를 입력하세요">
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeLinkModal()">취소</button>
+                <button class="modal-btn modal-btn-confirm" onclick="insertLink()">삽입</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <input type="file" id="imageFileInput" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+
+    <script>
+        let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
+        let drafts = JSON.parse(localStorage.getItem('bidul_drafts') || '{}');
+        let currentViewPostId = null;
+
+        function goHome() {
+            document.getElementById('homeHeader').classList.remove('hidden');
+            document.getElementById('writeHeader').classList.add('hidden');
+            document.getElementById('viewHeader').classList.add('hidden');
+            document.getElementById('homePage').classList.remove('hidden');
+            document.getElementById('writePage').classList.add('hidden');
+            document.getElementById('viewPage').classList.add('hidden');
+            renderPostList();
+        }
+
+        function goWrite() {
+            document.getElementById('homeHeader').classList.add('hidden');
+            document.getElementById('writeHeader').classList.remove('hidden');
+            document.getElementById('viewHeader').classList.add('hidden');
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('writePage').classList.remove('hidden');
+            document.getElementById('viewPage').classList.add('hidden');
+            
+            document.getElementById('titleInput').value = '';
+            document.getElementById('contentEditor').innerHTML = '';
+            if (drafts.title || drafts.content) {
+                if (confirm('임시 저장된 글이 있습니다. 불러오시겠습니까?')) {
+                    document.getElementById('titleInput').value = drafts.title || '';
+                    document.getElementById('contentEditor').innerHTML = drafts.content || '';
+                }
+            }
+            document.getElementById('titleInput').focus();
+        }
+
+        function goView(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            currentViewPostId = postId;
+            document.getElementById('homeHeader').classList.add('hidden');
+            document.getElementById('writeHeader').classList.add('hidden');
+            document.getElementById('viewHeader').classList.remove('hidden');
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('writePage').classList.add('hidden');
+            document.getElementById('viewPage').classList.remove('hidden');
+            
+            document.getElementById('viewTitle').textContent = post.title;
+            document.getElementById('viewMeta').textContent = post.date;
+            document.getElementById('viewContent').innerHTML = post.content;
+        }
+
+        function renderPostList() {
+            const listEl = document.getElementById('postList');
+            const countEl = document.getElementById('postCount');
+            const emptyEl = document.getElementById('emptyState');
+            
+            countEl.textContent = posts.length + '개의 글';
+            if (posts.length === 0) {
+                listEl.innerHTML = '';
+                listEl.appendChild(emptyEl);
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+            emptyEl.classList.add('hidden');
+            listEl.innerHTML = '';
+            
+            const sorted = [...posts].sort((a, b) => b.id - a.id);
+            sorted.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.onclick = () => goView(post.id);
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = post.content;
+                const textPreview = tempDiv.textContent || tempDiv.innerText || '';
+                
+                const imgMatch = post.content.match(/<img[^>]+src="([^"]+)"/);
+                const thumbnailHtml = imgMatch ? `<img class="post-card-thumbnail" src="${imgMatch[1]}" alt="">` : '';
+                
+                card.innerHTML = `
+                    ${thumbnailHtml}
+                    <div class="post-card-title">${escapeHtml(post.title) || '제목 없음'}</div>
+                    <div class="post-card-preview">${textPreview.substring(0, 150)}</div>
+                    <div class="post-card-meta"><span>${post.date}</span></div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function savePost() {
+            const title = document.getElementById('titleInput').value;
+            const content = document.getElementById('contentEditor').innerHTML;
+            drafts = { title, content };
+            localStorage.setItem('bidul_drafts', JSON.stringify(drafts));
+            showToast('임시 저장되었습니다');
+        }
+
+        function publishPost() {
+            const title = document.getElementById('titleInput').value.trim();
+            const content = document.getElementById('contentEditor').innerHTML.trim();
+            if (!title && !content) { showToast('제목 또는 내용을 입력해주세요'); return; }
+            
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            const post = { id: Date.now(), title: title || '제목 없음', content, date: dateStr };
+            posts.push(post);
+            localStorage.setItem('bidul_posts', JSON.stringify(posts));
+            drafts = {};
+            localStorage.setItem('bidul_drafts', JSON.stringify(drafts));
+            showToast('글이 등록되었습니다');
+            setTimeout(() => goHome(), 600);
+        }
+
+        function deletePost() {
+            if (!currentViewPostId) return;
+            if (!confirm('이 글을 삭제하시겠습니까?')) return;
+            posts = posts.filter(p => p.id !== currentViewPostId);
+            localStorage.setItem('bidul_posts', JSON.stringify(posts));
+            showToast('글이 삭제되었습니다');
+            setTimeout(() => goHome(), 400);
+        }
+
+        function insertImage() { document.getElementById('imageFileInput').click(); }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const editor = document.getElementById('contentEditor');
+                editor.focus();
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.maxWidth = '100%';
+                img.style.display = 'block';
+                img.style.margin = '16px 0';
+                
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    range.insertNode(img);
+                    const br = document.createElement('br');
+                    img.after(br);
+                    range.setStartAfter(br);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } else {
+                    editor.appendChild(img);
+                    editor.appendChild(document.createElement('br'));
+                }
+                showToast('사진이 삽입되었습니다');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function openLinkModal() {
+            document.getElementById('linkModal').classList.add('show');
+            document.getElementById('linkInput').value = '';
+            document.getElementById('linkInput').focus();
+        }
+
+        function closeLinkModal() { document.getElementById('linkModal').classList.remove('show'); }
+
+        function insertLink() {
+            const url = document.getElementById('linkInput').value.trim();
+            if (!url) { showToast('링크를 입력해주세요'); return; }
+            
+            const videoId = extractYoutubeId(url);
+            const editor = document.getElementById('contentEditor');
+            editor.focus();
+            const wrapper = document.createElement('div');
+            wrapper.style.margin = '16px 0';
+            
+            if (videoId) {
+                // 153 에러를 최대한 회피하기 위해 프라이버시 모드(youtube-nocookie.com) 사용
+                wrapper.innerHTML = `<iframe width="100%" height="400" src="https://www.youtube-nocookie.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else {
+                let formattedUrl = url;
+                if (!/^https?:\/\//i.test(url)) {
+                    formattedUrl = 'https://' + url;
+                }
+                wrapper.innerHTML = `<a href="${formattedUrl}" target="_blank" rel="noopener noreferrer" style="color:#0066cc;text-decoration:underline;word-break:break-all;">${formattedUrl}</a>`;
+            }
+
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(wrapper);
+                const br = document.createElement('br');
+                wrapper.after(br);
+                range.setStartAfter(br);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else {
+                editor.appendChild(wrapper);
+                editor.appendChild(document.createElement('br'));
+            }
+            closeLinkModal();
+            showToast(videoId ? '영상이 삽입되었습니다' : '링크가 삽입되었습니다');
+        }
+
+        function extractYoutubeId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
+                /(?:youtu\.be\/)([^?\s]+)/,
+                /(?:youtube\.com\/embed\/)([^?\s]+)/,
+                /(?:youtube\.com\/shorts\/)([^?\s]+)/
+            ];
+            for (const p of patterns) {
+                const m = url.match(p);
+                if (m) return m[1];
+            }
+            return null;
+        }
+
+        document.getElementById('linkInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') insertLink(); });
+        document.getElementById('linkModal').addEventListener('click', function(e) { if (e.target === this) closeLinkModal(); });
+
+        function changeFont() { document.getElementById('contentEditor').style.fontFamily = document.getElementById('fontSelect').value; }
+        function changeFontSize() { document.getElementById('contentEditor').style.fontSize = document.getElementById('sizeSelect').value; }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        renderPostList();
+    </script>
+</body>
+</html>
