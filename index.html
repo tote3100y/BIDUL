@@ -26,6 +26,8 @@
             --btn-pub-text: #ffffff;
             --shadow: rgba(0,0,0,0.05);
             --modal-overlay: rgba(0,0,0,0.5);
+            --fold-bg: #f7f7f7;
+            --fold-border: #e0e0e0;
         }
 
         .dark-mode {
@@ -42,6 +44,8 @@
             --btn-pub-text: #111111;
             --shadow: rgba(0,0,0,0.5);
             --modal-overlay: rgba(0,0,0,0.7);
+            --fold-bg: #2a2a2a;
+            --fold-border: #444444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,7 +60,6 @@
         .fixed-header {
             position: fixed; top: 0; left: 0; right: 0;
             z-index: 1000; background: var(--bg-paper);
-            transition: background-color 0.3s;
         }
 
         .toolbar-row-1 {
@@ -66,7 +69,6 @@
         .logo-area { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .logo-img { width: 28px; height: 28px; object-fit: cover; }
         .logo-text { font-size: 20px; font-weight: 900; color: var(--text-main); letter-spacing: 1px; }
-
         .action-buttons { display: flex; align-items: center; gap: 8px; }
 
         .menu-container { position: relative; display: inline-block; }
@@ -92,7 +94,7 @@
 
         .btn {
             padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
-            border-radius: 0; border: 1px solid var(--border-dark); font-family: inherit; transition: all 0.2s;
+            border-radius: 0; border: 1px solid var(--border-dark); font-family: inherit;
         }
         .btn-save { background: var(--bg-paper); color: var(--text-main); }
         .btn-save:hover { background: var(--hover-bg); }
@@ -126,7 +128,7 @@
         .view-outer { margin-top: 54px; padding-bottom: 100px; display: flex; justify-content: center; }
         .editor-paper {
             width: 820px; min-height: 800px; background: var(--bg-paper); padding: 60px 80px;
-            border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow); transition: background-color 0.3s;
+            border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow);
         }
 
         .title-area { width: 100%; margin-bottom: 30px; }
@@ -146,6 +148,78 @@
         .media-container { margin: 25px 0; background: #000; line-height: 0; }
         .media-container video, .media-container iframe { width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9; }
         img { max-width: 100%; height: auto; margin: 20px 0; display: block; }
+
+        /* ===== 접기/펼치기 블록 (글 작성·보기 공통) ===== */
+        .fold-block {
+            margin: 20px 0;
+            border: 1px solid var(--fold-border);
+            background: var(--fold-bg);
+            border-radius: 0;
+        }
+        .fold-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            list-style: none;
+        }
+        .fold-header::-webkit-details-marker { display: none; }
+        .fold-header::marker { content: ''; }
+
+        .fold-arrow {
+            flex-shrink: 0;
+            width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-sub);
+            transition: transform 0.25s ease;
+        }
+        .fold-arrow svg { width: 14px; height: 14px; }
+
+        /* details가 open일 때 화살표 회전 */
+        details.fold-block[open] > .fold-header .fold-arrow {
+            transform: rotate(180deg);
+        }
+
+        .fold-title {
+            flex: 1;
+            outline: none;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            font-family: inherit;
+            min-width: 0;
+        }
+        .fold-title:empty:before {
+            content: attr(data-placeholder);
+            color: var(--text-muted);
+        }
+
+        .fold-body {
+            padding: 0 16px 16px 44px;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-main);
+            border-top: 1px solid var(--fold-border);
+            margin-top: 0;
+            padding-top: 14px;
+        }
+        .fold-body:empty:before {
+            content: '접힌 내용을 입력하세요...';
+            color: var(--text-muted);
+        }
+
+        /* 에디터 안에서 접기 블록 편집 가능 */
+        .content-editor .fold-block { user-select: text; }
+        .content-editor .fold-header { cursor: pointer; }
+        .content-editor .fold-title { cursor: text; }
+        .content-editor .fold-body { min-height: 40px; }
 
         .home-container {
             margin-top: 54px; width: 820px; margin-left: auto; margin-right: auto;
@@ -186,7 +260,6 @@
             <div class="action-buttons">
                 <button class="btn btn-save" onclick="savePost()">저장</button>
                 <button class="btn btn-publish" onclick="publishPost()">등록</button>
-                <!-- 등록 오른쪽, 채워진 점 3개 -->
                 <div class="menu-container">
                     <button class="icon-btn" onclick="toggleMenu(event, 'writeMenu')">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -204,9 +277,26 @@
             </div>
         </div>
         <div class="toolbar-row-2">
-            <button class="tool-btn" onclick="insertImage()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg><span>사진</span></button>
-            <button class="tool-btn" onclick="insertVideo()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg><span>영상</span></button>
-            <button class="tool-btn" onclick="openLinkModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span>링크</span></button>
+            <button class="tool-btn" onclick="insertImage()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
+                <span>사진</span>
+            </button>
+            <button class="tool-btn" onclick="insertVideo()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg>
+                <span>영상</span>
+            </button>
+            <button class="tool-btn" onclick="openLinkModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                <span>링크</span>
+            </button>
+            <!-- 접기/펼치기 블록 삽입 -->
+            <button class="tool-btn" onclick="insertFoldBlock()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                    <line x1="4" y1="4" x2="20" y2="4"></line>
+                </svg>
+                <span>접기</span>
+            </button>
         </div>
         <div class="toolbar-row-3">
             <select class="font-select" id="fontSelect" onchange="updateStyle()">
@@ -232,7 +322,6 @@
             </div>
             <div class="action-buttons">
                 <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
-                <!-- 글쓰기 오른쪽, 채워진 점 3개 -->
                 <div class="menu-container">
                     <button class="icon-btn" onclick="toggleMenu(event, 'homeMenu')">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -265,7 +354,7 @@
         </div>
     </div>
 
-    <!-- 에디터 영역 -->
+    <!-- 에디터 -->
     <div class="editor-outer hidden" id="writePage">
         <div class="editor-paper">
             <div class="title-area">
@@ -276,7 +365,7 @@
         </div>
     </div>
 
-    <!-- 글 보기 영역 -->
+    <!-- 글 보기 -->
     <div class="view-outer hidden" id="viewPage">
         <div class="editor-paper">
             <div class="title-area">
@@ -288,13 +377,12 @@
         </div>
     </div>
 
-    <!-- 홈 화면 -->
+    <!-- 홈 -->
     <div class="home-container" id="homePage">
         <h2 style="margin-bottom:20px; font-weight:500; color:var(--text-main);">전체 글</h2>
         <div id="postList"></div>
     </div>
 
-    <!-- 링크 모달 -->
     <div class="modal-overlay" id="linkModal">
         <div class="modal">
             <h3>링크 삽입</h3>
@@ -328,20 +416,34 @@
         
         function saveSelection() {
             if (window.getSelection && window.getSelection().rangeCount > 0) {
-                savedRange = window.getSelection().getRangeAt(0);
+                const sel = window.getSelection();
+                // 접기 블록 안에서 선택된 경우는 저장하지 않음 (충돌 방지)
+                savedRange = sel.getRangeAt(0);
             }
         }
         function restoreSelection() {
             editor.focus();
             if (savedRange && window.getSelection) {
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(savedRange);
+                try {
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(savedRange);
+                } catch(e) {}
             }
         }
         editor.addEventListener('keyup', saveSelection);
         editor.addEventListener('mouseup', saveSelection);
         editor.addEventListener('blur', saveSelection);
+
+        // 접기 블록 헤더 클릭 시 토글은 details가 처리.
+        // 제목/본문 클릭 시 에디터 포커스 유지
+        editor.addEventListener('click', function(e) {
+            const title = e.target.closest('.fold-title');
+            const body = e.target.closest('.fold-body');
+            if (title || body) {
+                e.stopPropagation();
+            }
+        });
 
         function toggleMenu(e, menuId) {
             e.stopPropagation();
@@ -470,7 +572,52 @@
             e.target.value = '';
         }
 
-        function savePost() { showToast("임시 저장되었습니다."); }
+        /* ===== 접기/펼치기 블록 삽입 ===== */
+        function insertFoldBlock() {
+            saveSelection();
+            restoreSelection();
+
+            const id = 'fold-' + Date.now();
+            const html = `
+<details class="fold-block" id="${id}">
+  <summary class="fold-header">
+    <span class="fold-arrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </span>
+    <span class="fold-title" contenteditable="true" data-placeholder="제목을 입력하세요 (예: 상세 내용 보기)"></span>
+  </summary>
+  <div class="fold-body" contenteditable="true"><br></div>
+</details>
+<p><br></p>`;
+
+            document.execCommand('insertHTML', false, html);
+            showToast("접기 블록이 삽입되었습니다.");
+
+            // 제목에 포커스
+            setTimeout(() => {
+                const block = document.getElementById(id);
+                if (!block) return;
+                const titleEl = block.querySelector('.fold-title');
+                if (titleEl) {
+                    titleEl.focus();
+                    // 커서를 끝으로
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(titleEl);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }, 30);
+        }
+
+        function savePost() {
+            // 임시저장
+            const title = document.getElementById('titleInput').value;
+            const content = editor.innerHTML;
+            localStorage.setItem('bidul_drafts', JSON.stringify({ title, content }));
+            showToast("임시 저장되었습니다.");
+        }
         
         function publishPost() {
             const title = document.getElementById('titleInput').value;
@@ -479,6 +626,7 @@
             const newId = Date.now();
             posts.push({ id: newId, title, content, date: new Date().toLocaleDateString() });
             localStorage.setItem('bidul_posts', JSON.stringify(posts));
+            localStorage.removeItem('bidul_drafts');
             showToast("등록되었습니다.");
             goHome();
         }
@@ -503,9 +651,16 @@
                 const item = document.createElement('div');
                 item.className = 'post-item';
                 item.onclick = () => goView(p.id);
-                item.innerHTML = `<div class="post-title">${p.title}</div><div style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${p.content.replace(/<[^>]*>?/gm, '').substring(0,100)}...</div>`;
+                const text = p.content.replace(/<[^>]*>?/gm, '').substring(0, 100);
+                item.innerHTML = `<div class="post-title">${escapeHtml(p.title)}</div><div style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${escapeHtml(text)}...</div>`;
                 listDiv.appendChild(item);
             });
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text || '';
+            return d.innerHTML;
         }
 
         function showToast(msg) {
