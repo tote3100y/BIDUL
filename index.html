@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIDUL</title>
     <!-- 아이콘 설정 -->
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png" type="image/png">
     <link rel="apple-touch-icon" href="icon.png">
 
@@ -14,139 +15,165 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap');
 
+        /* 테마 변수 설정 (라이트 / 다크모드) */
+        :root {
+            --bg-main: #f4f4f4;
+            --bg-paper: #ffffff;
+            --text-main: #111111;
+            --text-sub: #555555;
+            --text-muted: #bbbbbb;
+            --border-light: #eeeeee;
+            --border-main: #e5e5e5;
+            --border-dark: #dcdcdc;
+            --hover-bg: #f9f9f9;
+            --btn-pub-bg: #555555;
+            --btn-pub-text: #ffffff;
+            --shadow: rgba(0,0,0,0.05);
+            --modal-overlay: rgba(0,0,0,0.5);
+        }
+
+        .dark-mode {
+            --bg-main: #121212;
+            --bg-paper: #1e1e1e;
+            --text-main: #eeeeee;
+            --text-sub: #aaaaaa;
+            --text-muted: #666666;
+            --border-light: #2a2a2a;
+            --border-main: #333333;
+            --border-dark: #444444;
+            --hover-bg: #2a2a2a;
+            --btn-pub-bg: #888888;
+            --btn-pub-text: #111111;
+            --shadow: rgba(0,0,0,0.5);
+            --modal-overlay: rgba(0,0,0,0.7);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Noto Sans KR', sans-serif;
-            background-color: #f4f4f4;
-            color: #222;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* 고정 헤더 영역 */
         .fixed-header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 1000;
-            background: #fff;
+            position: fixed; top: 0; left: 0; right: 0;
+            z-index: 1000; background: var(--bg-paper);
+            transition: background-color 0.3s;
         }
 
-        /* 1단: 로고 + 저장/등록 */
         .toolbar-row-1 {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 54px;
-            padding: 0 20px;
-            border-bottom: 1px solid #e5e5e5;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 54px; padding: 0 20px; border-bottom: 1px solid var(--border-main);
         }
         .logo-area { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .logo-img { width: 28px; height: 28px; object-fit: cover; }
-        .logo-text { font-size: 20px; font-weight: 900; color: #111; letter-spacing: 1px; }
+        .logo-text { font-size: 20px; font-weight: 900; color: var(--text-main); letter-spacing: 1px; }
+
+        .action-buttons { display: flex; align-items: center; gap: 8px; }
+
+        /* 세로점 3개 설정 메뉴 */
+        .menu-container { position: relative; display: inline-block; }
+        .icon-btn {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-sub); padding: 5px; display: flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:hover { color: var(--text-main); }
+        
+        .dropdown {
+            display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
+            background: var(--bg-paper); border: 1px solid var(--border-main);
+            box-shadow: 0 4px 12px var(--shadow); min-width: 150px; z-index: 2000;
+        }
+        .dropdown.show { display: block; }
+        .dropdown-item {
+            padding: 12px 16px; font-size: 13px; color: var(--text-main);
+            cursor: pointer; border-bottom: 1px solid var(--border-light); font-weight: 500;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: var(--hover-bg); }
 
         .btn {
-            padding: 6px 16px; font-size: 13px; font-weight: 500;
-            cursor: pointer; border-radius: 0; border: 1px solid #dcdcdc;
-            font-family: inherit;
+            padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+            border-radius: 0; border: 1px solid var(--border-dark); font-family: inherit; transition: all 0.2s;
         }
-        .btn-save { background: #fff; color: #666; margin-right: 6px; }
-        .btn-publish { background: #555; color: #fff; border-color: #555; }
-        .btn-publish:hover { background: #333; }
+        .btn-save { background: var(--bg-paper); color: var(--text-main); }
+        .btn-save:hover { background: var(--hover-bg); }
+        .btn-publish { background: var(--btn-pub-bg); color: var(--btn-pub-text); border-color: var(--btn-pub-bg); }
+        .btn-publish:hover { opacity: 0.8; }
 
-        /* 2단: 툴 아이콘 (사진, 영상, 링크 - 위아래 수직 배치) */
         .toolbar-row-2 {
-            display: flex;
-            align-items: center;
-            height: 70px;
-            padding: 0 15px;
-            border-bottom: 1px solid #eee;
-            gap: 2px;
+            display: flex; align-items: center; height: 70px; padding: 0 15px;
+            border-bottom: 1px solid var(--border-light); gap: 2px;
         }
         .tool-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 58px; height: 58px;
-            background: none; border: none; cursor: pointer; color: #444;
-            border-radius: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 58px; height: 58px; background: none; border: none; cursor: pointer; color: var(--text-sub);
         }
-        .tool-btn:hover { background-color: #f9f9f9; }
+        .tool-btn:hover { background-color: var(--hover-bg); color: var(--text-main); }
         .tool-btn svg { width: 22px; height: 22px; margin-bottom: 4px; stroke-width: 1.5; }
         .tool-btn span { font-size: 11px; }
 
-        /* 3단: 서체/크기 (박스 없음) */
         .toolbar-row-3 {
-            display: flex;
-            align-items: center;
-            height: 38px;
-            padding: 0 20px;
-            border-bottom: 1px solid #d1d1d1;
-            gap: 15px;
+            display: flex; align-items: center; height: 38px; padding: 0 20px;
+            border-bottom: 1px solid var(--border-main); gap: 15px;
         }
         .font-select, .size-select {
             border: none; outline: none; -webkit-appearance: none;
-            background: transparent url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right center;
-            padding-right: 20px; font-size: 13px; color: #555; cursor: pointer;
+            background: transparent; padding-right: 5px; font-size: 13px; color: var(--text-sub); cursor: pointer;
             font-family: inherit;
         }
+        .font-select option, .size-select option { background: var(--bg-paper); color: var(--text-main); }
 
-        /* 에디터 중앙 종이 스타일 */
-        .editor-outer {
-            margin-top: 162px;
-            padding-bottom: 100px;
-            display: flex;
-            justify-content: center;
-        }
+        .editor-outer { margin-top: 162px; padding-bottom: 100px; display: flex; justify-content: center; }
         .editor-paper {
-            width: 820px; min-height: 800px;
-            background: #fff; padding: 60px 80px;
-            border: 1px solid #e5e5e5;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            width: 820px; min-height: 800px; background: var(--bg-paper); padding: 60px 80px;
+            border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow); transition: background-color 0.3s;
         }
 
         .title-area { width: 100%; margin-bottom: 30px; }
         .title-input {
-            width: 100%; border: none; outline: none;
-            font-size: 30px; font-weight: 500; color: #111; padding-bottom: 15px;
-            font-family: inherit;
+            width: 100%; border: none; outline: none; font-size: 30px; font-weight: 500;
+            color: var(--text-main); padding-bottom: 15px; font-family: inherit; background: transparent;
         }
-        .title-input::placeholder { color: #ccc; }
-        .title-line { width: 100%; height: 1px; background: #eee; }
+        .title-input::placeholder { color: var(--text-muted); }
+        .title-line { width: 100%; height: 1px; background: var(--border-light); }
 
         .content-editor {
             width: 100%; min-height: 600px; border: none; outline: none;
-            font-size: 16px; line-height: 1.8; color: #333; word-break: break-all;
+            font-size: 16px; line-height: 1.8; color: var(--text-main); word-break: break-all; background: transparent;
         }
-        .content-editor:empty:before { content: attr(data-placeholder); color: #ccc; }
+        .content-editor:empty:before { content: attr(data-placeholder); color: var(--text-muted); }
 
-        /* 미디어 컨테이너 */
         .media-container { margin: 25px 0; background: #000; line-height: 0; }
-        .media-container video, .media-container iframe {
-            width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9;
-        }
+        .media-container video, .media-container iframe { width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9; }
         img { max-width: 100%; height: auto; margin: 20px 0; display: block; }
 
-        /* 홈 화면 */
         .home-container {
             margin-top: 54px; width: 820px; margin-left: auto; margin-right: auto;
-            background: #fff; min-height: 100vh; padding: 40px 60px; border: 1px solid #e5e5e5;
+            background: var(--bg-paper); min-height: 100vh; padding: 40px 60px; border: 1px solid var(--border-main);
         }
-        .post-item { padding: 25px 0; border-bottom: 1px solid #eee; cursor: pointer; }
-        .post-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
+        .post-item { padding: 25px 0; border-bottom: 1px solid var(--border-light); cursor: pointer; }
+        .post-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
 
-        /* 모달 */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;
+            background: var(--modal-overlay); z-index: 2000; align-items: center; justify-content: center;
         }
         .modal-overlay.show { display: flex; }
-        .modal { background: #fff; padding: 25px; width: 400px; border-radius: 0; }
-        .modal-input { width: 100%; padding: 10px; border: 1px solid #ddd; margin: 15px 0; outline: none; }
+        .modal { background: var(--bg-paper); padding: 25px; width: 400px; border-radius: 0; }
+        .modal h3 { color: var(--text-main); font-size: 16px; margin-bottom: 15px; }
+        .modal-input { 
+            width: 100%; padding: 10px; border: 1px solid var(--border-dark); margin-bottom: 20px; 
+            outline: none; background: transparent; color: var(--text-main);
+        }
 
         .hidden { display: none !important; }
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #333; color: #fff; padding: 10px 20px; font-size: 13px; z-index: 3000; display: none;
+            background: var(--text-main); color: var(--bg-paper); padding: 10px 20px; 
+            font-size: 13px; z-index: 3000; display: none; font-weight: bold;
         }
     </style>
 </head>
@@ -160,6 +187,18 @@
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
+                <div class="menu-container">
+                    <button class="icon-btn" onclick="toggleMenu(event, 'writeMenu')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
+                        </svg>
+                    </button>
+                    <div class="dropdown" id="writeMenu">
+                        <div class="dropdown-item" onclick="toggleDarkMode()">다크모드 전환</div>
+                        <div class="dropdown-item" onclick="exportCache()">캐시 내보내기</div>
+                        <div class="dropdown-item" onclick="document.getElementById('importInput').click()">캐시 불러오기</div>
+                    </div>
+                </div>
                 <button class="btn btn-save" onclick="savePost()">저장</button>
                 <button class="btn btn-publish" onclick="publishPost()">등록</button>
             </div>
@@ -171,15 +210,15 @@
         </div>
         <div class="toolbar-row-3">
             <select class="font-select" id="fontSelect" onchange="updateStyle()">
-                <option value="'Nanum Gothic'">나눔고딕</option>
-                <option value="'Noto Sans KR'">본고딕</option>
-                <option value="serif">명조체</option>
+                <option value="'Nanum Gothic'">나눔고딕 ▾</option>
+                <option value="'Noto Sans KR'">본고딕 ▾</option>
+                <option value="serif">명조체 ▾</option>
             </select>
             <select class="size-select" id="sizeSelect" onchange="updateStyle()">
-                <option value="13px">13</option>
-                <option value="16px" selected>16</option>
-                <option value="19px">19</option>
-                <option value="24px">24</option>
+                <option value="13px">13 ▾</option>
+                <option value="16px" selected>16 ▾</option>
+                <option value="19px">19 ▾</option>
+                <option value="24px">24 ▾</option>
             </select>
         </div>
     </div>
@@ -191,7 +230,35 @@
                 <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
                 <span class="logo-text">BIDUL</span>
             </div>
-            <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
+            <div class="action-buttons">
+                <div class="menu-container">
+                    <button class="icon-btn" onclick="toggleMenu(event, 'homeMenu')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
+                        </svg>
+                    </button>
+                    <div class="dropdown" id="homeMenu">
+                        <div class="dropdown-item" onclick="toggleDarkMode()">다크모드 전환</div>
+                        <div class="dropdown-item" onclick="exportCache()">캐시 내보내기</div>
+                        <div class="dropdown-item" onclick="document.getElementById('importInput').click()">캐시 불러오기</div>
+                    </div>
+                </div>
+                <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 글 보기 헤더 -->
+    <div class="fixed-header hidden" id="viewHeader">
+        <div class="toolbar-row-1">
+            <div class="logo-area" onclick="goHome()">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <span class="logo-text">BIDUL</span>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-save" onclick="goHome()">목록</button>
+                <button class="btn btn-publish" onclick="deletePost()" style="background:#cc0000; border-color:#cc0000;">삭제</button>
+            </div>
         </div>
     </div>
 
@@ -206,9 +273,21 @@
         </div>
     </div>
 
+    <!-- 글 보기 영역 -->
+    <div class="editor-outer hidden" id="viewPage">
+        <div class="editor-paper">
+            <div class="title-area">
+                <h1 id="viewTitle" style="font-size:30px; font-weight:500; color:var(--text-main); margin-bottom:10px;"></h1>
+                <div id="viewDate" style="font-size:13px; color:var(--text-sub); margin-bottom:20px;"></div>
+                <div class="title-line"></div>
+            </div>
+            <div class="content-editor" id="viewContent" contenteditable="false" style="min-height:auto;"></div>
+        </div>
+    </div>
+
     <!-- 홈 화면 -->
     <div class="home-container" id="homePage">
-        <h2 style="margin-bottom:20px; font-weight:500;">전체 글</h2>
+        <h2 style="margin-bottom:20px; font-weight:500; color:var(--text-main);">전체 글</h2>
         <div id="postList"></div>
     </div>
 
@@ -218,7 +297,7 @@
             <h3>링크 삽입</h3>
             <input type="text" class="modal-input" id="linkInput" placeholder="유튜브 주소 또는 웹 링크">
             <div style="display:flex; justify-content:flex-end; gap:8px;">
-                <button class="btn" onclick="closeLinkModal()">취소</button>
+                <button class="btn btn-save" onclick="closeLinkModal()">취소</button>
                 <button class="btn btn-publish" onclick="insertLink()">확인</button>
             </div>
         </div>
@@ -228,37 +307,145 @@
 
     <input type="file" id="imageInput" accept="image/*" hidden onchange="handleImage(event)">
     <input type="file" id="videoInput" accept="video/*" hidden onchange="handleVideo(event)">
+    <input type="file" id="importInput" accept=".json" hidden onchange="importCache(event)">
 
     <script>
         let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
-        
-        // Ponytail 초기화
+        let currentViewId = null;
+        let savedRange = null; // 커서 포커스 저장용 변수
+
+        if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
+
         window.addEventListener('DOMContentLoaded', () => {
             if (typeof Ponytail !== 'undefined') new Ponytail('#contentEditor');
+            renderPosts();
         });
 
-        function goHome() { location.reload(); }
+        // ================= [ 포커스 저장 (링크 씹힘 방지) ] ================= //
+        const editor = document.getElementById('contentEditor');
+        
+        function saveSelection() {
+            if (window.getSelection && window.getSelection().rangeCount > 0) {
+                savedRange = window.getSelection().getRangeAt(0);
+            }
+        }
+
+        function restoreSelection() {
+            editor.focus();
+            if (savedRange && window.getSelection) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+            }
+        }
+
+        // 에디터에서 타이핑하거나 마우스 클릭 시 커서 위치를 계속 저장해둡니다.
+        editor.addEventListener('keyup', saveSelection);
+        editor.addEventListener('mouseup', saveSelection);
+        editor.addEventListener('blur', saveSelection);
+        // ================================================================ //
+
+        // ================= [ 메뉴 및 다크모드/캐시 설정 ] ================= //
+        function toggleMenu(e, menuId) {
+            e.stopPropagation();
+            const menu = document.getElementById(menuId);
+            const isShowing = menu.classList.contains('show');
+            document.querySelectorAll('.dropdown').forEach(m => m.classList.remove('show'));
+            if (!isShowing) menu.classList.add('show');
+        }
+        window.onclick = () => document.querySelectorAll('.dropdown').forEach(m => m.classList.remove('show'));
+
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('bidul_darkmode', isDark);
+            showToast(isDark ? "다크모드가 켜졌습니다." : "라이트모드가 켜졌습니다.");
+        }
+
+        function exportCache() {
+            const dataStr = localStorage.getItem('bidul_posts') || '[]';
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `bidul_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast("데이터를 다운로드했습니다.");
+        }
+
+        function importCache(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const parsedData = JSON.parse(event.target.result);
+                    if (Array.isArray(parsedData) && confirm('기존 글이 덮어씌워집니다. 진행하시겠습니까?')) {
+                        localStorage.setItem('bidul_posts', JSON.stringify(parsedData));
+                        alert('데이터를 성공적으로 불러왔습니다.');
+                        location.reload();
+                    }
+                } catch(err) { alert('파일 오류가 발생했습니다.'); }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+        // ================================================================ //
+
+        // ================= [ 화면 이동 (홈, 글쓰기, 글보기) ] ================= //
+        function hideAll() {
+            ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage']
+                .forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
+
+        function goHome() {
+            hideAll();
+            document.getElementById('homeHeader').classList.remove('hidden');
+            document.getElementById('homePage').classList.remove('hidden');
+            renderPosts();
+        }
+
         function goWrite() {
-            document.getElementById('homeHeader').classList.add('hidden');
-            document.getElementById('homePage').classList.add('hidden');
+            hideAll();
             document.getElementById('writeHeader').classList.remove('hidden');
             document.getElementById('writePage').classList.remove('hidden');
+            document.getElementById('titleInput').value = '';
+            editor.innerHTML = '';
+        }
+
+        function goView(id) {
+            const post = posts.find(p => p.id === id);
+            if(!post) return;
+            currentViewId = id;
+            hideAll();
+            document.getElementById('viewHeader').classList.remove('hidden');
+            document.getElementById('viewPage').classList.remove('hidden');
+            
+            document.getElementById('viewTitle').innerText = post.title;
+            document.getElementById('viewDate').innerText = post.date;
+            document.getElementById('viewContent').innerHTML = post.content;
         }
 
         function updateStyle() {
-            const editor = document.getElementById('contentEditor');
             editor.style.fontFamily = document.getElementById('fontSelect').value;
             editor.style.fontSize = document.getElementById('sizeSelect').value;
         }
 
-        function openLinkModal() { document.getElementById('linkModal').classList.add('show'); }
+        // ================= [ 에디터 기능 (사진/영상/링크) ] ================= //
+        function openLinkModal() { 
+            saveSelection(); // 모달 띄우기 직전 커서 위치 꽉 잡기!
+            document.getElementById('linkModal').classList.add('show'); 
+            document.getElementById('linkInput').focus();
+        }
         function closeLinkModal() { document.getElementById('linkModal').classList.remove('show'); }
 
         function insertLink() {
             const url = document.getElementById('linkInput').value;
+            if(!url) return;
+            
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
             const videoId = (match && match[2].length === 11) ? match[2] : null;
+
+            restoreSelection(); // 씹히지 않게 본문에 커서 복구!
 
             if (videoId) {
                 const html = `<div class="media-container" contenteditable="false"><iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
@@ -267,46 +454,74 @@
                 document.execCommand('createLink', false, url);
             }
             closeLinkModal();
+            document.getElementById('linkInput').value = '';
         }
 
-        function insertImage() { document.getElementById('imageInput').click(); }
+        function insertImage() { saveSelection(); document.getElementById('imageInput').click(); }
         function handleImage(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+            if (!e.target.files[0]) return;
             const reader = new FileReader();
             reader.onload = (event) => {
+                restoreSelection();
                 document.execCommand('insertHTML', false, `<img src="${event.target.result}"><p><br></p>`);
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(e.target.files[0]);
+            e.target.value = '';
         }
 
-        /* 🎥 영상 업로드 처리 */
-        function insertVideo() { document.getElementById('videoInput').click(); }
+        function insertVideo() { saveSelection(); document.getElementById('videoInput').click(); }
         function handleVideo(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const videoUrl = URL.createObjectURL(file); 
-            const html = `
-                <div class="media-container" contenteditable="false">
-                    <video src="${videoUrl}" controls></video>
-                </div><p><br></p>`;
+            if (!e.target.files[0]) return;
+            const videoUrl = URL.createObjectURL(e.target.files[0]); 
+            const html = `<div class="media-container" contenteditable="false"><video src="${videoUrl}" controls></video></div><p><br></p>`;
             
-            document.getElementById('contentEditor').focus();
+            restoreSelection();
             document.execCommand('insertHTML', false, html);
             showToast("영상이 삽입되었습니다.");
             e.target.value = '';
         }
 
+        // ================= [ 데이터 저장 및 렌더링 ] ================= //
         function savePost() { showToast("임시 저장되었습니다."); }
+        
         function publishPost() {
             const title = document.getElementById('titleInput').value;
-            const content = document.getElementById('contentEditor').innerHTML;
+            const content = editor.innerHTML;
             if(!title) return alert("제목을 입력하세요.");
-            posts.push({ title, content, date: new Date().toLocaleDateString() });
+            
+            const newId = Date.now();
+            posts.push({ id: newId, title, content, date: new Date().toLocaleDateString() });
             localStorage.setItem('bidul_posts', JSON.stringify(posts));
-            alert("등록되었습니다.");
+            
+            showToast("등록되었습니다.");
             goHome();
+        }
+
+        function deletePost() {
+            if(!confirm('정말 삭제하시겠습니까?')) return;
+            posts = posts.filter(p => p.id !== currentViewId);
+            localStorage.setItem('bidul_posts', JSON.stringify(posts));
+            showToast("삭제되었습니다.");
+            goHome();
+        }
+
+        function renderPosts() {
+            const listDiv = document.getElementById('postList');
+            listDiv.innerHTML = '';
+            if(posts.length === 0) {
+                listDiv.innerHTML = "<p style='color:var(--text-muted);'>작성된 글이 없습니다.</p>";
+                return;
+            }
+            // 이전 데이터 호환성을 위해 id가 없으면 생성해줌
+            posts.forEach((p, i) => { if(!p.id) p.id = Date.now() + i; });
+            
+            [...posts].reverse().forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'post-item';
+                item.onclick = () => goView(p.id);
+                item.innerHTML = `<div class="post-title">${p.title}</div><div class="post-preview" style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${p.content.replace(/<[^>]*>?/gm, '').substring(0,100)}...</div>`;
+                listDiv.appendChild(item);
+            });
         }
 
         function showToast(msg) {
@@ -315,17 +530,8 @@
             setTimeout(() => t.style.display = 'none', 2000);
         }
 
-        const listDiv = document.getElementById('postList');
-        if(posts.length === 0) {
-            listDiv.innerHTML = "<p style='color:#ccc;'>작성된 글이 없습니다.</p>";
-        } else {
-            posts.reverse().forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'post-item';
-                item.innerHTML = `<div class="post-title">${p.title}</div>`;
-                listDiv.appendChild(item);
-            });
-        }
+        // PWA 서비스워커 등록
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>
 </body>
 </html>
