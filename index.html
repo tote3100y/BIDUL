@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIDUL</title>
-    <!-- 아이콘 설정 -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png" type="image/png">
     <link rel="apple-touch-icon" href="icon.png">
-
-    <!-- Ponytail 라이브러리 연동 -->
     <script src="https://cdn.jsdelivr.net/gh/dietrichgebert/ponytail@main/ponytail.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap');
 
-        /* 테마 변수 설정 (라이트 / 다크모드) */
         :root {
             --bg-main: #f4f4f4;
             --bg-paper: #ffffff;
@@ -73,11 +69,11 @@
 
         .action-buttons { display: flex; align-items: center; gap: 8px; }
 
-        /* 세로점 3개 설정 메뉴 */
         .menu-container { position: relative; display: inline-block; }
         .icon-btn {
             background: none; border: none; cursor: pointer;
-            color: var(--text-sub); padding: 5px; display: flex; align-items: center; justify-content: center;
+            color: var(--text-sub); padding: 5px;
+            display: flex; align-items: center; justify-content: center;
         }
         .icon-btn:hover { color: var(--text-main); }
         
@@ -127,6 +123,7 @@
         .font-select option, .size-select option { background: var(--bg-paper); color: var(--text-main); }
 
         .editor-outer { margin-top: 162px; padding-bottom: 100px; display: flex; justify-content: center; }
+        .view-outer { margin-top: 54px; padding-bottom: 100px; display: flex; justify-content: center; }
         .editor-paper {
             width: 820px; min-height: 800px; background: var(--bg-paper); padding: 60px 80px;
             border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow); transition: background-color 0.3s;
@@ -187,10 +184,15 @@
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
+                <button class="btn btn-save" onclick="savePost()">저장</button>
+                <button class="btn btn-publish" onclick="publishPost()">등록</button>
+                <!-- 등록 오른쪽, 채워진 점 3개 -->
                 <div class="menu-container">
                     <button class="icon-btn" onclick="toggleMenu(event, 'writeMenu')">
-                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="12" cy="19" r="2"></circle>
                         </svg>
                     </button>
                     <div class="dropdown" id="writeMenu">
@@ -199,8 +201,6 @@
                         <div class="dropdown-item" onclick="document.getElementById('importInput').click()">캐시 불러오기</div>
                     </div>
                 </div>
-                <button class="btn btn-save" onclick="savePost()">저장</button>
-                <button class="btn btn-publish" onclick="publishPost()">등록</button>
             </div>
         </div>
         <div class="toolbar-row-2">
@@ -231,10 +231,14 @@
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
+                <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
+                <!-- 글쓰기 오른쪽, 채워진 점 3개 -->
                 <div class="menu-container">
                     <button class="icon-btn" onclick="toggleMenu(event, 'homeMenu')">
-                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="12" cy="19" r="2"></circle>
                         </svg>
                     </button>
                     <div class="dropdown" id="homeMenu">
@@ -243,7 +247,6 @@
                         <div class="dropdown-item" onclick="document.getElementById('importInput').click()">캐시 불러오기</div>
                     </div>
                 </div>
-                <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
             </div>
         </div>
     </div>
@@ -274,7 +277,7 @@
     </div>
 
     <!-- 글 보기 영역 -->
-    <div class="editor-outer hidden" id="viewPage">
+    <div class="view-outer hidden" id="viewPage">
         <div class="editor-paper">
             <div class="title-area">
                 <h1 id="viewTitle" style="font-size:30px; font-weight:500; color:var(--text-main); margin-bottom:10px;"></h1>
@@ -312,7 +315,7 @@
     <script>
         let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
         let currentViewId = null;
-        let savedRange = null; // 커서 포커스 저장용 변수
+        let savedRange = null;
 
         if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
 
@@ -321,7 +324,6 @@
             renderPosts();
         });
 
-        // ================= [ 포커스 저장 (링크 씹힘 방지) ] ================= //
         const editor = document.getElementById('contentEditor');
         
         function saveSelection() {
@@ -329,7 +331,6 @@
                 savedRange = window.getSelection().getRangeAt(0);
             }
         }
-
         function restoreSelection() {
             editor.focus();
             if (savedRange && window.getSelection) {
@@ -338,14 +339,10 @@
                 sel.addRange(savedRange);
             }
         }
-
-        // 에디터에서 타이핑하거나 마우스 클릭 시 커서 위치를 계속 저장해둡니다.
         editor.addEventListener('keyup', saveSelection);
         editor.addEventListener('mouseup', saveSelection);
         editor.addEventListener('blur', saveSelection);
-        // ================================================================ //
 
-        // ================= [ 메뉴 및 다크모드/캐시 설정 ] ================= //
         function toggleMenu(e, menuId) {
             e.stopPropagation();
             const menu = document.getElementById(menuId);
@@ -388,9 +385,7 @@
             reader.readAsText(file);
             e.target.value = '';
         }
-        // ================================================================ //
 
-        // ================= [ 화면 이동 (홈, 글쓰기, 글보기) ] ================= //
         function hideAll() {
             ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage']
                 .forEach(id => document.getElementById(id).classList.add('hidden'));
@@ -418,7 +413,6 @@
             hideAll();
             document.getElementById('viewHeader').classList.remove('hidden');
             document.getElementById('viewPage').classList.remove('hidden');
-            
             document.getElementById('viewTitle').innerText = post.title;
             document.getElementById('viewDate').innerText = post.date;
             document.getElementById('viewContent').innerHTML = post.content;
@@ -429,9 +423,8 @@
             editor.style.fontSize = document.getElementById('sizeSelect').value;
         }
 
-        // ================= [ 에디터 기능 (사진/영상/링크) ] ================= //
         function openLinkModal() { 
-            saveSelection(); // 모달 띄우기 직전 커서 위치 꽉 잡기!
+            saveSelection();
             document.getElementById('linkModal').classList.add('show'); 
             document.getElementById('linkInput').focus();
         }
@@ -440,13 +433,10 @@
         function insertLink() {
             const url = document.getElementById('linkInput').value;
             if(!url) return;
-            
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
             const videoId = (match && match[2].length === 11) ? match[2] : null;
-
-            restoreSelection(); // 씹히지 않게 본문에 커서 복구!
-
+            restoreSelection();
             if (videoId) {
                 const html = `<div class="media-container" contenteditable="false"><iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
                 document.execCommand('insertHTML', false, html);
@@ -474,25 +464,21 @@
             if (!e.target.files[0]) return;
             const videoUrl = URL.createObjectURL(e.target.files[0]); 
             const html = `<div class="media-container" contenteditable="false"><video src="${videoUrl}" controls></video></div><p><br></p>`;
-            
             restoreSelection();
             document.execCommand('insertHTML', false, html);
             showToast("영상이 삽입되었습니다.");
             e.target.value = '';
         }
 
-        // ================= [ 데이터 저장 및 렌더링 ] ================= //
         function savePost() { showToast("임시 저장되었습니다."); }
         
         function publishPost() {
             const title = document.getElementById('titleInput').value;
             const content = editor.innerHTML;
             if(!title) return alert("제목을 입력하세요.");
-            
             const newId = Date.now();
             posts.push({ id: newId, title, content, date: new Date().toLocaleDateString() });
             localStorage.setItem('bidul_posts', JSON.stringify(posts));
-            
             showToast("등록되었습니다.");
             goHome();
         }
@@ -512,14 +498,12 @@
                 listDiv.innerHTML = "<p style='color:var(--text-muted);'>작성된 글이 없습니다.</p>";
                 return;
             }
-            // 이전 데이터 호환성을 위해 id가 없으면 생성해줌
             posts.forEach((p, i) => { if(!p.id) p.id = Date.now() + i; });
-            
             [...posts].reverse().forEach(p => {
                 const item = document.createElement('div');
                 item.className = 'post-item';
                 item.onclick = () => goView(p.id);
-                item.innerHTML = `<div class="post-title">${p.title}</div><div class="post-preview" style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${p.content.replace(/<[^>]*>?/gm, '').substring(0,100)}...</div>`;
+                item.innerHTML = `<div class="post-title">${p.title}</div><div style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${p.content.replace(/<[^>]*>?/gm, '').substring(0,100)}...</div>`;
                 listDiv.appendChild(item);
             });
         }
@@ -530,7 +514,6 @@
             setTimeout(() => t.style.display = 'none', 2000);
         }
 
-        // PWA 서비스워커 등록
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>
 </body>
