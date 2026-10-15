@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIDUL</title>
+    <!-- 아이콘 설정 -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png" type="image/png">
     <link rel="apple-touch-icon" href="icon.png">
+
+    <!-- Ponytail 라이브러리 연동 -->
     <script src="https://cdn.jsdelivr.net/gh/dietrichgebert/ponytail@main/ponytail.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap');
 
+        /* 테마 변수 설정 (라이트 / 다크모드) */
         :root {
             --bg-main: #f4f4f4;
             --bg-paper: #ffffff;
@@ -26,8 +30,6 @@
             --btn-pub-text: #ffffff;
             --shadow: rgba(0,0,0,0.05);
             --modal-overlay: rgba(0,0,0,0.5);
-            --fold-bg: #f7f7f7;
-            --fold-border: #e0e0e0;
         }
 
         .dark-mode {
@@ -44,8 +46,6 @@
             --btn-pub-text: #111111;
             --shadow: rgba(0,0,0,0.5);
             --modal-overlay: rgba(0,0,0,0.7);
-            --fold-bg: #2a2a2a;
-            --fold-border: #444444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -60,6 +60,7 @@
         .fixed-header {
             position: fixed; top: 0; left: 0; right: 0;
             z-index: 1000; background: var(--bg-paper);
+            transition: background-color 0.3s;
         }
 
         .toolbar-row-1 {
@@ -69,6 +70,7 @@
         .logo-area { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .logo-img { width: 28px; height: 28px; object-fit: cover; }
         .logo-text { font-size: 20px; font-weight: 900; color: var(--text-main); letter-spacing: 1px; }
+
         .action-buttons { display: flex; align-items: center; gap: 8px; }
 
         .menu-container { position: relative; display: inline-block; }
@@ -94,7 +96,7 @@
 
         .btn {
             padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
-            border-radius: 0; border: 1px solid var(--border-dark); font-family: inherit;
+            border-radius: 0; border: 1px solid var(--border-dark); font-family: inherit; transition: all 0.2s;
         }
         .btn-save { background: var(--bg-paper); color: var(--text-main); }
         .btn-save:hover { background: var(--hover-bg); }
@@ -108,6 +110,7 @@
         .tool-btn {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 58px; height: 58px; background: none; border: none; cursor: pointer; color: var(--text-sub);
+            border-radius: 0;
         }
         .tool-btn:hover { background-color: var(--hover-bg); color: var(--text-main); }
         .tool-btn svg { width: 22px; height: 22px; margin-bottom: 4px; stroke-width: 1.5; }
@@ -124,11 +127,13 @@
         }
         .font-select option, .size-select option { background: var(--bg-paper); color: var(--text-main); }
 
-        .editor-outer { margin-top: 162px; padding-bottom: 100px; display: flex; justify-content: center; }
-        .view-outer { margin-top: 54px; padding-bottom: 100px; display: flex; justify-content: center; }
+        .editor-outer, .view-outer {
+            margin-top: 162px; padding-bottom: 100px; display: flex; justify-content: center;
+        }
+        .view-outer { margin-top: 54px; }
         .editor-paper {
             width: 820px; min-height: 800px; background: var(--bg-paper); padding: 60px 80px;
-            border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow);
+            border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow); transition: background-color 0.3s;
         }
 
         .title-area { width: 100%; margin-bottom: 30px; }
@@ -149,78 +154,55 @@
         .media-container video, .media-container iframe { width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9; }
         img { max-width: 100%; height: auto; margin: 20px 0; display: block; }
 
-        /* ===== 접기/펼치기 블록 (글 작성·보기 공통) ===== */
+        /* ===== 접기/펼치기 블록 (박스 없음) ===== */
         .fold-block {
-            margin: 20px 0;
-            border: 1px solid var(--fold-border);
-            background: var(--fold-bg);
-            border-radius: 0;
+            margin: 12px 0;
         }
         .fold-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
+            gap: 6px;
             cursor: pointer;
             user-select: none;
-            font-size: 14px;
-            font-weight: 500;
             color: var(--text-main);
+            font-weight: 700;
             list-style: none;
         }
         .fold-header::-webkit-details-marker { display: none; }
         .fold-header::marker { content: ''; }
 
         .fold-arrow {
-            flex-shrink: 0;
-            width: 18px; height: 18px;
             display: flex; align-items: center; justify-content: center;
             color: var(--text-sub);
-            transition: transform 0.25s ease;
+            transition: transform 0.2s ease;
         }
-        .fold-arrow svg { width: 14px; height: 14px; }
+        .fold-arrow svg { width: 16px; height: 16px; }
 
-        /* details가 open일 때 화살표 회전 */
+        /* 열렸을 때 화살표 회전 (▶ -> ▼) */
         details.fold-block[open] > .fold-header .fold-arrow {
-            transform: rotate(180deg);
+            transform: rotate(90deg);
         }
 
         .fold-title {
-            flex: 1;
-            outline: none;
-            border: none;
-            background: transparent;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-main);
-            font-family: inherit;
-            min-width: 0;
+            flex: 1; outline: none; border: none; background: transparent;
+            font-size: inherit; color: inherit; font-family: inherit;
         }
-        .fold-title:empty:before {
-            content: attr(data-placeholder);
-            color: var(--text-muted);
-        }
+        .fold-title:empty:before { content: attr(data-placeholder); color: var(--text-muted); font-weight: normal; }
 
         .fold-body {
-            padding: 0 16px 16px 44px;
+            padding-left: 22px; /* 화살표 너비만큼 들여쓰기 */
+            padding-top: 6px;
             font-size: 15px;
             line-height: 1.8;
-            color: var(--text-main);
-            border-top: 1px solid var(--fold-border);
-            margin-top: 0;
-            padding-top: 14px;
+            color: var(--text-sub);
         }
-        .fold-body:empty:before {
-            content: '접힌 내용을 입력하세요...';
-            color: var(--text-muted);
-        }
+        .fold-body:empty:before { content: '내용을 입력하세요...'; color: var(--text-muted); }
 
-        /* 에디터 안에서 접기 블록 편집 가능 */
         .content-editor .fold-block { user-select: text; }
-        .content-editor .fold-header { cursor: pointer; }
         .content-editor .fold-title { cursor: text; }
-        .content-editor .fold-body { min-height: 40px; }
+        .content-editor .fold-body { min-height: 30px; }
 
+        /* 홈 화면 */
         .home-container {
             margin-top: 54px; width: 820px; margin-left: auto; margin-right: auto;
             background: var(--bg-paper); min-height: 100vh; padding: 40px 60px; border: 1px solid var(--border-main);
@@ -289,11 +271,10 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                 <span>링크</span>
             </button>
-            <!-- 접기/펼치기 블록 삽입 -->
+            <!-- 접기 기능 -->
             <button class="tool-btn" onclick="insertFoldBlock()">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                    <line x1="4" y1="4" x2="20" y2="4"></line>
+                    <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
                 <span>접기</span>
             </button>
@@ -349,12 +330,14 @@
             </div>
             <div class="action-buttons">
                 <button class="btn btn-save" onclick="goHome()">목록</button>
+                <!-- 수정 버튼 추가 -->
+                <button class="btn btn-save" onclick="editPost()">수정</button>
                 <button class="btn btn-publish" onclick="deletePost()" style="background:#cc0000; border-color:#cc0000;">삭제</button>
             </div>
         </div>
     </div>
 
-    <!-- 에디터 -->
+    <!-- 에디터 영역 -->
     <div class="editor-outer hidden" id="writePage">
         <div class="editor-paper">
             <div class="title-area">
@@ -365,7 +348,7 @@
         </div>
     </div>
 
-    <!-- 글 보기 -->
+    <!-- 글 보기 영역 -->
     <div class="view-outer hidden" id="viewPage">
         <div class="editor-paper">
             <div class="title-area">
@@ -377,12 +360,13 @@
         </div>
     </div>
 
-    <!-- 홈 -->
+    <!-- 홈 화면 -->
     <div class="home-container" id="homePage">
         <h2 style="margin-bottom:20px; font-weight:500; color:var(--text-main);">전체 글</h2>
         <div id="postList"></div>
     </div>
 
+    <!-- 링크 모달 -->
     <div class="modal-overlay" id="linkModal">
         <div class="modal">
             <h3>링크 삽입</h3>
@@ -403,6 +387,7 @@
     <script>
         let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
         let currentViewId = null;
+        let editingPostId = null; // 수정 중인 글 ID
         let savedRange = null;
 
         if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
@@ -416,9 +401,7 @@
         
         function saveSelection() {
             if (window.getSelection && window.getSelection().rangeCount > 0) {
-                const sel = window.getSelection();
-                // 접기 블록 안에서 선택된 경우는 저장하지 않음 (충돌 방지)
-                savedRange = sel.getRangeAt(0);
+                savedRange = window.getSelection().getRangeAt(0);
             }
         }
         function restoreSelection() {
@@ -435,14 +418,11 @@
         editor.addEventListener('mouseup', saveSelection);
         editor.addEventListener('blur', saveSelection);
 
-        // 접기 블록 헤더 클릭 시 토글은 details가 처리.
-        // 제목/본문 클릭 시 에디터 포커스 유지
+        // 접기 블록 클릭 시 에디터 포커스 충돌 방지
         editor.addEventListener('click', function(e) {
             const title = e.target.closest('.fold-title');
             const body = e.target.closest('.fold-body');
-            if (title || body) {
-                e.stopPropagation();
-            }
+            if (title || body) e.stopPropagation();
         });
 
         function toggleMenu(e, menuId) {
@@ -500,7 +480,9 @@
             renderPosts();
         }
 
+        // 새 글 쓰기
         function goWrite() {
+            editingPostId = null; // 수정 모드 해제
             hideAll();
             document.getElementById('writeHeader').classList.remove('hidden');
             document.getElementById('writePage').classList.remove('hidden');
@@ -508,6 +490,7 @@
             editor.innerHTML = '';
         }
 
+        // 글 보기
         function goView(id) {
             const post = posts.find(p => p.id === id);
             if(!post) return;
@@ -518,6 +501,20 @@
             document.getElementById('viewTitle').innerText = post.title;
             document.getElementById('viewDate').innerText = post.date;
             document.getElementById('viewContent').innerHTML = post.content;
+        }
+
+        // 글 수정 모드 진입
+        function editPost() {
+            const post = posts.find(p => p.id === currentViewId);
+            if (!post) return;
+            
+            editingPostId = post.id;
+            hideAll();
+            document.getElementById('writeHeader').classList.remove('hidden');
+            document.getElementById('writePage').classList.remove('hidden');
+            
+            document.getElementById('titleInput').value = post.title;
+            editor.innerHTML = post.content;
         }
 
         function updateStyle() {
@@ -572,35 +569,31 @@
             e.target.value = '';
         }
 
-        /* ===== 접기/펼치기 블록 삽입 ===== */
+        /* ===== 접기/펼치기 블록 (박스 없음) ===== */
         function insertFoldBlock() {
             saveSelection();
             restoreSelection();
-
             const id = 'fold-' + Date.now();
             const html = `
 <details class="fold-block" id="${id}">
   <summary class="fold-header">
     <span class="fold-arrow">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
     </span>
-    <span class="fold-title" contenteditable="true" data-placeholder="제목을 입력하세요 (예: 상세 내용 보기)"></span>
+    <span class="fold-title" contenteditable="true" data-placeholder="접기 제목 입력..."></span>
   </summary>
   <div class="fold-body" contenteditable="true"><br></div>
 </details>
 <p><br></p>`;
-
             document.execCommand('insertHTML', false, html);
-            showToast("접기 블록이 삽입되었습니다.");
+            showToast("접기 기능이 삽입되었습니다.");
 
-            // 제목에 포커스
             setTimeout(() => {
                 const block = document.getElementById(id);
                 if (!block) return;
                 const titleEl = block.querySelector('.fold-title');
                 if (titleEl) {
                     titleEl.focus();
-                    // 커서를 끝으로
                     const range = document.createRange();
                     const sel = window.getSelection();
                     range.selectNodeContents(titleEl);
@@ -612,7 +605,6 @@
         }
 
         function savePost() {
-            // 임시저장
             const title = document.getElementById('titleInput').value;
             const content = editor.innerHTML;
             localStorage.setItem('bidul_drafts', JSON.stringify({ title, content }));
@@ -623,11 +615,25 @@
             const title = document.getElementById('titleInput').value;
             const content = editor.innerHTML;
             if(!title) return alert("제목을 입력하세요.");
-            const newId = Date.now();
-            posts.push({ id: newId, title, content, date: new Date().toLocaleDateString() });
+
+            if (editingPostId) {
+                // 기존 글 업데이트
+                const post = posts.find(p => p.id === editingPostId);
+                if (post) {
+                    post.title = title;
+                    post.content = content;
+                    post.date = new Date().toLocaleDateString(); // 수정 날짜로 갱신
+                }
+                editingPostId = null;
+                showToast("수정되었습니다.");
+            } else {
+                // 새 글 등록
+                posts.push({ id: Date.now(), title, content, date: new Date().toLocaleDateString() });
+                showToast("등록되었습니다.");
+            }
+            
             localStorage.setItem('bidul_posts', JSON.stringify(posts));
             localStorage.removeItem('bidul_drafts');
-            showToast("등록되었습니다.");
             goHome();
         }
 
@@ -668,8 +674,6 @@
             t.innerText = msg; t.style.display = 'block';
             setTimeout(() => t.style.display = 'none', 2000);
         }
-
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>
 </body>
 </html>
