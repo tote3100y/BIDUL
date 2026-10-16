@@ -385,183 +385,15 @@
     <input type="file" id="importInput" accept=".json" hidden onchange="importCache(event)">
 
     <script>
-        /* ===== IndexedDB 설정 및 헬퍼 함수 ===== */
-        const DB_NAME = 'BidulDB';
-        const DB_VERSION = 1;
-        const STORE_POSTS = 'posts';
-        const STORE_DRAFTS = 'drafts';
-        let dbInstance = null;
-
-        function initDB() {
-            if (dbInstance) return Promise.resolve(dbInstance);
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_POSTS)) {
-                        db.createObjectStore(STORE_POSTS, { keyPath: 'id' });
-                    }
-                    if (!db.objectStoreNames.contains(STORE_DRAFTS)) {
-                        db.createObjectStore(STORE_DRAFTS, { keyPath: 'id' });
-                    }
-                };
-
-                request.onsuccess = (event) => {
-                    dbInstance = event.target.result;
-                    resolve(dbInstance);
-                };
-
-                request.onerror = (event) => {
-                    console.error('IndexedDB 열기 실패:', event.target.error);
-                    reject(event.target.error);
-                };
-            });
-        }
-
-        // 기존 localStorage 데이터가 있으면 IndexedDB로 자동 마이그레이션
-        async function migrateFromLocalStorage() {
-            const db = await initDB();
-
-            const rawPosts = localStorage.getItem('bidul_posts');
-            if (rawPosts) {
-                try {
-                    const legacyPosts = JSON.parse(rawPosts);
-                    if (Array.isArray(legacyPosts) && legacyPosts.length > 0) {
-                        await new Promise((resolve, reject) => {
-                            const tx = db.transaction(STORE_POSTS, 'readwrite');
-                            const store = tx.objectStore(STORE_POSTS);
-                            legacyPosts.forEach((p, i) => {
-                                if (!p.id) p.id = Date.now() + i;
-                                store.put(p);
-                            });
-                            tx.oncomplete = () => resolve();
-                            tx.onerror = (e) => reject(e.target.error);
-                        });
-                    }
-                    localStorage.removeItem('bidul_posts');
-                } catch (e) {
-                    console.error('게시글 마이그레이션 오류:', e);
-                }
-            }
-
-            const rawDraft = localStorage.getItem('bidul_drafts');
-            if (rawDraft) {
-                try {
-                    const legacyDraft = JSON.parse(rawDraft);
-                    if (legacyDraft && (legacyDraft.title || legacyDraft.content)) {
-                        await saveDraftToDB(legacyDraft.title || '', legacyDraft.content || '');
-                    }
-                    localStorage.removeItem('bidul_drafts');
-                } catch (e) {
-                    console.error('임시저장 마이그레이션 오류:', e);
-                }
-            }
-        }
-
-        async function getAllPostsFromDB() {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_POSTS, 'readonly');
-                const store = tx.objectStore(STORE_POSTS);
-                const req = store.getAll();
-                req.onsuccess = () => {
-                    const result = req.result || [];
-                    result.sort((a, b) => (a.id || 0) - (b.id || 0));
-                    resolve(result);
-                };
-                req.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function savePostToDB(post) {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_POSTS, 'readwrite');
-                const store = tx.objectStore(STORE_POSTS);
-                store.put(post);
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function deletePostFromDB(id) {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_POSTS, 'readwrite');
-                const store = tx.objectStore(STORE_POSTS);
-                store.delete(id);
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function replaceAllPostsInDB(newPosts) {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_POSTS, 'readwrite');
-                const store = tx.objectStore(STORE_POSTS);
-                store.clear();
-                newPosts.forEach((p, i) => {
-                    if (!p.id) p.id = Date.now() + i;
-                    store.put(p);
-                });
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function saveDraftToDB(title, content) {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_DRAFTS, 'readwrite');
-                const store = tx.objectStore(STORE_DRAFTS);
-                store.put({ id: 'current_draft', title, content, updatedAt: Date.now() });
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function getDraftFromDB() {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_DRAFTS, 'readonly');
-                const store = tx.objectStore(STORE_DRAFTS);
-                const req = store.get('current_draft');
-                req.onsuccess = () => resolve(req.result || null);
-                req.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        async function deleteDraftFromDB() {
-            const db = await initDB();
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_DRAFTS, 'readwrite');
-                const store = tx.objectStore(STORE_DRAFTS);
-                store.delete('current_draft');
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e.target.error);
-            });
-        }
-
-        /* ===== 앱 상태 및 초기화 ===== */
-        let posts = [];
+        let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
         let currentViewId = null;
         let editingPostId = null; // 수정 중인 글 ID
         let savedRange = null;
 
         if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
 
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', () => {
             if (typeof Ponytail !== 'undefined') new Ponytail('#contentEditor');
-            try {
-                await initDB();
-                await migrateFromLocalStorage();
-                posts = await getAllPostsFromDB();
-            } catch (err) {
-                console.error('DB 초기화 중 오류:', err);
-                showToast('데이터베이스를 불러오지 못했습니다.');
-            }
             renderPosts();
         });
 
@@ -608,42 +440,29 @@
             showToast(isDark ? "다크모드가 켜졌습니다." : "라이트모드가 켜졌습니다.");
         }
 
-        async function exportCache() {
-            try {
-                const allPosts = await getAllPostsFromDB();
-                const dataStr = JSON.stringify(allPosts);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `bidul_backup_${new Date().toISOString().slice(0,10)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                showToast("데이터를 다운로드했습니다.");
-            } catch (err) {
-                console.error('내보내기 오류:', err);
-                alert('데이터 내보내기 중 오류가 발생했습니다.');
-            }
+        function exportCache() {
+            const dataStr = localStorage.getItem('bidul_posts') || '[]';
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `bidul_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast("데이터를 다운로드했습니다.");
         }
 
         function importCache(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = async function(event) {
+            reader.onload = function(event) {
                 try {
                     const parsedData = JSON.parse(event.target.result);
                     if (Array.isArray(parsedData) && confirm('기존 글이 덮어씌워집니다. 진행하시겠습니까?')) {
-                        await replaceAllPostsInDB(parsedData);
-                        posts = await getAllPostsFromDB();
-                        renderPosts();
+                        localStorage.setItem('bidul_posts', JSON.stringify(parsedData));
                         alert('데이터를 성공적으로 불러왔습니다.');
-                        goHome();
+                        location.reload();
                     }
-                } catch(err) {
-                    console.error('가져오기 오류:', err);
-                    alert('파일 오류가 발생했습니다.');
-                }
+                } catch(err) { alert('파일 오류가 발생했습니다.'); }
             };
             reader.readAsText(file);
             e.target.value = '';
@@ -654,35 +473,21 @@
                 .forEach(id => document.getElementById(id).classList.add('hidden'));
         }
 
-        async function goHome() {
+        function goHome() {
             hideAll();
             document.getElementById('homeHeader').classList.remove('hidden');
             document.getElementById('homePage').classList.remove('hidden');
-            try {
-                posts = await getAllPostsFromDB();
-            } catch (e) {}
             renderPosts();
         }
 
         // 새 글 쓰기
-        async function goWrite() {
+        function goWrite() {
             editingPostId = null; // 수정 모드 해제
             hideAll();
             document.getElementById('writeHeader').classList.remove('hidden');
             document.getElementById('writePage').classList.remove('hidden');
             document.getElementById('titleInput').value = '';
             editor.innerHTML = '';
-
-            try {
-                const draft = await getDraftFromDB();
-                if (draft && (draft.title || draft.content)) {
-                    document.getElementById('titleInput').value = draft.title || '';
-                    editor.innerHTML = draft.content || '';
-                    showToast("임시 저장된 글을 불러왔습니다.");
-                }
-            } catch (e) {
-                console.error('임시저장 불러오기 실패:', e);
-            }
         }
 
         // 글 보기
@@ -755,16 +560,12 @@
 
         function insertVideo() { saveSelection(); document.getElementById('videoInput').click(); }
         function handleVideo(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const html = `<div class="media-container" contenteditable="false"><video src="${event.target.result}" controls></video></div><p><br></p>`;
-                restoreSelection();
-                document.execCommand('insertHTML', false, html);
-                showToast("영상이 삽입되었습니다.");
-            };
-            reader.readAsDataURL(file);
+            if (!e.target.files[0]) return;
+            const videoUrl = URL.createObjectURL(e.target.files[0]); 
+            const html = `<div class="media-container" contenteditable="false"><video src="${videoUrl}" controls></video></div><p><br></p>`;
+            restoreSelection();
+            document.execCommand('insertHTML', false, html);
+            showToast("영상이 삽입되었습니다.");
             e.target.value = '';
         }
 
@@ -803,62 +604,45 @@
             }, 30);
         }
 
-        async function savePost() {
+        function savePost() {
             const title = document.getElementById('titleInput').value;
             const content = editor.innerHTML;
-            try {
-                await saveDraftToDB(title, content);
-                showToast("임시 저장되었습니다.");
-            } catch (err) {
-                console.error('임시 저장 오류:', err);
-                alert("임시 저장 중 오류가 발생했습니다.");
-            }
+            localStorage.setItem('bidul_drafts', JSON.stringify({ title, content }));
+            showToast("임시 저장되었습니다.");
         }
         
-        async function publishPost() {
+        function publishPost() {
             const title = document.getElementById('titleInput').value;
             const content = editor.innerHTML;
             if(!title) return alert("제목을 입력하세요.");
 
-            try {
-                if (editingPostId) {
-                    // 기존 글 업데이트
-                    const post = posts.find(p => p.id === editingPostId);
-                    if (post) {
-                        post.title = title;
-                        post.content = content;
-                        post.date = new Date().toLocaleDateString(); // 수정 날짜로 갱신
-                        await savePostToDB(post);
-                    }
-                    editingPostId = null;
-                    showToast("수정되었습니다.");
-                } else {
-                    // 새 글 등록
-                    const newPost = { id: Date.now(), title, content, date: new Date().toLocaleDateString() };
-                    await savePostToDB(newPost);
-                    posts.push(newPost);
-                    showToast("등록되었습니다.");
+            if (editingPostId) {
+                // 기존 글 업데이트
+                const post = posts.find(p => p.id === editingPostId);
+                if (post) {
+                    post.title = title;
+                    post.content = content;
+                    post.date = new Date().toLocaleDateString(); // 수정 날짜로 갱신
                 }
-
-                await deleteDraftFromDB();
-                await goHome();
-            } catch (err) {
-                console.error('글 등록/수정 오류:', err);
-                alert("글을 저장하는 중 오류가 발생했습니다.");
+                editingPostId = null;
+                showToast("수정되었습니다.");
+            } else {
+                // 새 글 등록
+                posts.push({ id: Date.now(), title, content, date: new Date().toLocaleDateString() });
+                showToast("등록되었습니다.");
             }
+            
+            localStorage.setItem('bidul_posts', JSON.stringify(posts));
+            localStorage.removeItem('bidul_drafts');
+            goHome();
         }
 
-        async function deletePost() {
+        function deletePost() {
             if(!confirm('정말 삭제하시겠습니까?')) return;
-            try {
-                await deletePostFromDB(currentViewId);
-                posts = posts.filter(p => p.id !== currentViewId);
-                showToast("삭제되었습니다.");
-                await goHome();
-            } catch (err) {
-                console.error('글 삭제 오류:', err);
-                alert("삭제 중 오류가 발생했습니다.");
-            }
+            posts = posts.filter(p => p.id !== currentViewId);
+            localStorage.setItem('bidul_posts', JSON.stringify(posts));
+            showToast("삭제되었습니다.");
+            goHome();
         }
 
         function renderPosts() {
@@ -891,5 +675,5 @@
             setTimeout(() => t.style.display = 'none', 2000);
         }
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4b7a2e1ddf8fa65',t:'MTc5MjE1OTcxMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
