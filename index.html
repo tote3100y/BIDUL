@@ -149,6 +149,12 @@
             font-size: 16px; line-height: 1.8; color: var(--text-main); word-break: break-all; background: transparent;
         }
         .content-editor:empty:before { content: attr(data-placeholder); color: var(--text-muted); }
+        /* 이미지 파일을 에디터 위로 드래그할 때 삽입 위치를 알 수 있게 표시 */
+        .content-editor.drag-over {
+            outline: 2px dashed var(--text-sub);
+            outline-offset: -8px;
+            background-color: var(--hover-bg);
+        }
 
         .media-container { margin: 25px 0; background: #000; line-height: 0; }
         .media-container video, .media-container iframe { width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9; }
@@ -380,22 +386,139 @@
 
     <div class="toast" id="toast"></div>
 
-    <input type="file" id="imageInput" accept="image/*" hidden onchange="handleImage(event)">
+    <input type="file" id="imageInput" accept="image/*" multiple hidden onchange="handleImage(event)">
     <input type="file" id="videoInput" accept="video/*" hidden onchange="handleVideo(event)">
     <input type="file" id="importInput" accept=".json" hidden onchange="importCache(event)">
 
     <script>
-        let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
+        // 글과 임시 저장은 localStorage 대신 IndexedDB에 저장합니다.
+        // IndexedDB는 localStorage보다 큰 데이터를 저장할 수 있어 사진이 포함된 글에 적합합니다.
+        let posts = [];
         let currentViewId = null;
         let editingPostId = null; // 수정 중인 글 ID
         let savedRange = null;
+        let bidulDB = null;
+        const BIDUL_DB_NAME = 'BIDUL_DATABASE';
+        const BIDUL_DB_VERSION = 1;
+        const BIDUL_STORE_NAME = 'appData';
 
         if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (typeof Ponytail !== 'undefined') new Ponytail('#contentEditor');
+        function openBidulDB() {
+            return new Promise((resolve, reject) => {
+                if (!('indexedDB' in window)) {
+                    reject(new Error('이 브라우저는 IndexedDB를 지원하지 않습니다.'));
+                    return;
+                }
+                const request = indexedDB.open(BIDUL_DB_NAME, BIDUL_DB_VERSION);
+                request.onupgradeneeded = () => {
+                    const database = request.result;
+                    if (!database.objectStoreNames.contains(BIDUL_STORE_NAME)) {
+                        database.createObjectStore(BIDUL_STORE_NAME, { keyPath: 'key' });
+                    }
+                };
+                request.onsuccess = () => {
+                    bidulDB = request.result;
+                    bidulDB.onversionchange = () => bidulDB.close();
+                    resolve(bidulDB);
+                };
+                request.onerror = () => reject(request.error || new Error('IndexedDB를 열지 못했습니다.'));
+                request.onblocked = () => reject(new Error('다른 탭에서 데이터베이스가 열려 있습니다. 다른 BIDUL 탭을 닫고 다시 시도해 주세요.'));
+            });
+        }
+
+        function dbGet(key) {
+            return new Promise((resolve, reject) => {
+                if (!bidulDB) return reject(new Error('저장소가 아직 준비되지 않았습니다.'));
+                const tx = bidulDB.transaction(BIDUL_STORE_NAME, 'readonly');
+                const request = tx.objectStore(BIDUL_STORE_NAME).get(key);
+                request.onsuccess = () => resolve(request.result ? request.result.value : undefined);
+                request.onerror = () => reject(request.error || new Error('데이터를 읽지 못했습니다.'));
+                tx.onerror = () => reject(tx.error || new Error('데이터 읽기 작업에 실패했습니다.'));
+            });
+        }
+
+        function dbSet(key, value) {
+            return new Promise((resolve, reject) => {
+                if (!bidulDB) return reject(new Error('저장소가 아직 준비되지 않았습니다.'));
+                let tx;
+                try {
+                    tx = bidulDB.transaction(BIDUL_STORE_NAME, 'readwrite');
+                    tx.objectStore(BIDUL_STORE_NAME).put({ key, value });
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error || new Error('데이터 저장에 실패했습니다.'));
+                tx.onabort = () => reject(tx.error || new Error('데이터 저장이 취소되었습니다.'));
+            });
+        }
+
+        function dbDelete(key) {
+            return new Promise((resolve, reject) => {
+                if (!bidulDB) return reject(new Error('저장소가 아직 준비되지 않았습니다.'));
+                const tx = bidulDB.transaction(BIDUL_STORE_NAME, 'readwrite');
+                tx.objectStore(BIDUL_STORE_NAME).delete(key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error || new Error('데이터 삭제에 실패했습니다.'));
+                tx.onabort = () => reject(tx.error || new Error('데이터 삭제가 취소되었습니다.'));
+            });
+        }
+
+        function showStorageError(error) {
+            console.error('BIDUL 저장 오류:', error);
+            if (error && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+                alert('브라우저 저장 공간이 부족해 저장하지 못했습니다. 큰 사진이 포함된 글이나 필요 없는 글을 백업한 뒤 정리하고 다시 시도해 주세요.');
+            } else {
+                alert('저장에 실패했습니다. 브라우저의 사이트 데이터 차단 여부를 확인하고, 다른 BIDUL 탭을 닫은 뒤 다시 시도해 주세요.');
+            }
+        }
+
+        async function initializeBidul() {
+            if (typeof Ponytail !== 'undefined') {
+                try { new Ponytail('#contentEditor'); } catch (error) { console.warn('Ponytail 초기화 실패:', error); }
+            }
+            try {
+                await openBidulDB();
+
+                // 이전 버전의 localStorage 글을 IndexedDB로 한 번 이전합니다.
+                let savedPosts = await dbGet('posts');
+                const legacyPosts = localStorage.getItem('bidul_posts');
+                if (savedPosts === undefined) {
+                    if (legacyPosts) {
+                        const parsed = JSON.parse(legacyPosts);
+                        if (!Array.isArray(parsed)) throw new Error('기존 글 데이터 형식이 올바르지 않습니다.');
+                        savedPosts = parsed;
+                    } else {
+                        savedPosts = [];
+                    }
+                    await dbSet('posts', savedPosts);
+                }
+                posts = Array.isArray(savedPosts) ? savedPosts : [];
+                // IndexedDB 저장에 성공한 뒤에만 구버전 복사본을 제거합니다.
+                if (legacyPosts !== null) localStorage.removeItem('bidul_posts');
+
+                // 이전 버전 임시 저장 데이터도 이전합니다.
+                const savedDraft = await dbGet('drafts');
+                const legacyDraft = localStorage.getItem('bidul_drafts');
+                if (savedDraft === undefined && legacyDraft !== null) {
+                    await dbSet('drafts', JSON.parse(legacyDraft));
+                    localStorage.removeItem('bidul_drafts');
+                }
+            } catch (error) {
+                console.error('BIDUL 초기화/데이터 이전 오류:', error);
+                // 이전 데이터가 있으면 읽기 전용으로라도 목록을 표시합니다.
+                try {
+                    const legacy = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
+                    posts = Array.isArray(legacy) ? legacy : [];
+                } catch (_) { posts = []; }
+                showToast('저장소 초기화에 문제가 있습니다. 콘솔 오류를 확인해 주세요.');
+            }
             renderPosts();
-        });
+        }
+
+        window.addEventListener('DOMContentLoaded', initializeBidul);
 
         const editor = document.getElementById('contentEditor');
         
@@ -425,6 +548,88 @@
             if (title || body) e.stopPropagation();
         });
 
+        // 드래그한 위치에 커서를 배치합니다. Chrome/Edge와 Firefox를 모두 지원합니다.
+        function saveSelectionAtPoint(x, y) {
+            let range = null;
+            if (document.caretRangeFromPoint) {
+                range = document.caretRangeFromPoint(x, y);
+            } else if (document.caretPositionFromPoint) {
+                const position = document.caretPositionFromPoint(x, y);
+                if (position) {
+                    range = document.createRange();
+                    range.setStart(position.offsetNode, position.offset);
+                    range.collapse(true);
+                }
+            }
+            if (range && editor.contains(range.commonAncestorContainer)) {
+                savedRange = range.cloneRange();
+                return true;
+            }
+            return false;
+        }
+
+        function isFileDrag(e) {
+            return Array.from(e.dataTransfer?.types || []).includes('Files');
+        }
+
+        editor.addEventListener('dragenter', (e) => {
+            if (!isFileDrag(e)) return;
+            e.preventDefault();
+            editor.classList.add('drag-over');
+        });
+
+        editor.addEventListener('dragover', (e) => {
+            if (!isFileDrag(e)) return;
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+            editor.classList.add('drag-over');
+        });
+
+        editor.addEventListener('dragleave', (e) => {
+            if (!editor.contains(e.relatedTarget)) editor.classList.remove('drag-over');
+        });
+
+        editor.addEventListener('drop', async (e) => {
+            const files = Array.from(e.dataTransfer?.files || []);
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            if (imageFiles.length === 0) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            editor.classList.remove('drag-over');
+            const hasDropCaret = saveSelectionAtPoint(e.clientX, e.clientY);
+            if (!hasDropCaret) {
+                const range = document.createRange();
+                range.selectNodeContents(editor);
+                range.collapse(false);
+                savedRange = range;
+            }
+            editor.focus();
+
+            let inserted = 0;
+            for (const file of imageFiles) {
+                try {
+                    await insertImageFile(file);
+                    inserted++;
+                } catch (error) {
+                    console.error('이미지 드롭 삽입 오류:', error);
+                    showToast(`이미지를 삽입하지 못했습니다: ${file.name}`);
+                }
+            }
+            if (inserted > 0) showToast(`${inserted}개 이미지가 삽입되었습니다.`);
+            if (files.length > imageFiles.length) {
+                showToast('이미지 파일만 삽입했습니다.');
+            }
+        });
+
+        // 에디터 바깥에 파일을 놓았을 때 브라우저가 이미지 파일로 이동하는 동작을 방지합니다.
+        window.addEventListener('dragover', (e) => {
+            if (isFileDrag(e) && !editor.contains(e.target)) e.preventDefault();
+        });
+        window.addEventListener('drop', (e) => {
+            if (isFileDrag(e) && !editor.contains(e.target)) e.preventDefault();
+        });
+
         function toggleMenu(e, menuId) {
             e.stopPropagation();
             const menu = document.getElementById(menuId);
@@ -440,32 +645,49 @@
             showToast(isDark ? "다크모드가 켜졌습니다." : "라이트모드가 켜졌습니다.");
         }
 
-        function exportCache() {
-            const dataStr = localStorage.getItem('bidul_posts') || '[]';
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `bidul_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast("데이터를 다운로드했습니다.");
+        async function exportCache() {
+            try {
+                const storedPosts = bidulDB ? await dbGet('posts') : posts;
+                const dataStr = JSON.stringify(Array.isArray(storedPosts) ? storedPosts : posts);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bidul_backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast('데이터를 다운로드했습니다.');
+            } catch (error) {
+                showStorageError(error);
+            }
         }
 
         function importCache(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = async function(event) {
                 try {
                     const parsedData = JSON.parse(event.target.result);
-                    if (Array.isArray(parsedData) && confirm('기존 글이 덮어씌워집니다. 진행하시겠습니까?')) {
-                        localStorage.setItem('bidul_posts', JSON.stringify(parsedData));
-                        alert('데이터를 성공적으로 불러왔습니다.');
-                        location.reload();
-                    }
-                } catch(err) { alert('파일 오류가 발생했습니다.'); }
+                    if (!Array.isArray(parsedData)) throw new Error('백업 파일은 글 목록 배열이어야 합니다.');
+                    if (!confirm('기존 글이 덮어씌워집니다. 진행하시겠습니까?')) return;
+                    await dbSet('posts', parsedData);
+                    posts = parsedData;
+                    localStorage.removeItem('bidul_posts');
+                    try { await dbDelete('drafts'); } catch (_) {}
+                    renderPosts();
+                    alert('데이터를 성공적으로 불러왔습니다.');
+                } catch (error) {
+                    if (error instanceof SyntaxError) alert('JSON 파일을 읽을 수 없습니다. 백업 파일이 올바른지 확인해 주세요.');
+                    else showStorageError(error);
+                } finally {
+                    e.target.value = '';
+                }
             };
+            reader.onerror = () => { alert('파일을 읽지 못했습니다.'); e.target.value = ''; };
             reader.readAsText(file);
-            e.target.value = '';
         }
 
         function hideAll() {
@@ -546,16 +768,91 @@
             document.getElementById('linkInput').value = '';
         }
 
-        function insertImage() { saveSelection(); document.getElementById('imageInput').click(); }
-        function handleImage(e) {
-            if (!e.target.files[0]) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                restoreSelection();
-                document.execCommand('insertHTML', false, `<img src="${event.target.result}"><p><br></p>`);
-            };
-            reader.readAsDataURL(e.target.files[0]);
-            e.target.value = '';
+        function insertImage() {
+            saveSelection();
+            document.getElementById('imageInput').click();
+        }
+
+        // 이미지를 최대 1920px로 축소하고 WebP로 압축해 저장 용량을 줄입니다.
+        // GIF 애니메이션, 기존 WebP 애니메이션, SVG 벡터는 원본을 유지합니다.
+        // 투명도는 WebP 형식에서 유지되며, WebP 미지원 브라우저에서는 PNG로 대체합니다.
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('이미지 파일을 읽지 못했습니다.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function imageFileToDataURL(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                throw new Error('이미지 파일이 아닙니다.');
+            }
+            if (['image/gif', 'image/svg+xml', 'image/webp'].includes(file.type.toLowerCase())) {
+                return await readFileAsDataURL(file);
+            }
+
+            const objectUrl = URL.createObjectURL(file);
+            try {
+                const image = new Image();
+                image.src = objectUrl;
+                if (typeof image.decode === 'function') {
+                    await image.decode();
+                } else {
+                    await new Promise((resolve, reject) => {
+                        image.onload = resolve;
+                        image.onerror = () => reject(new Error('이미지를 읽지 못했습니다.'));
+                    });
+                }
+
+                const maxDimension = 1920;
+                const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+                const width = Math.max(1, Math.round(image.naturalWidth * scale));
+                const height = Math.max(1, Math.round(image.naturalHeight * scale));
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const context = canvas.getContext('2d');
+                if (!context) throw new Error('이미지 처리 기능을 사용할 수 없습니다.');
+                context.drawImage(image, 0, 0, width, height);
+
+                const webpData = canvas.toDataURL('image/webp', 0.84);
+                if (webpData.startsWith('data:image/webp;')) return webpData;
+                return canvas.toDataURL('image/png');
+            } finally {
+                URL.revokeObjectURL(objectUrl);
+            }
+        }
+
+        async function insertImageFile(file) {
+            const dataUrl = await imageFileToDataURL(file);
+            restoreSelection();
+            const inserted = document.execCommand(
+                'insertHTML',
+                false,
+                `<img src="${dataUrl}" alt=""><p><br></p>`
+            );
+            if (!inserted) {
+                throw new Error('현재 커서 위치에 이미지를 삽입하지 못했습니다.');
+            }
+            saveSelection();
+        }
+
+        async function handleImage(e) {
+            const files = Array.from(e.target.files || []);
+            try {
+                for (const file of files) {
+                    try {
+                        await insertImageFile(file);
+                    } catch (error) {
+                        console.error('이미지 삽입 오류:', error);
+                        alert(`이미지 '${file.name}'을(를) 삽입하지 못했습니다. 다른 이미지 파일로 다시 시도해 주세요.`);
+                    }
+                }
+            } finally {
+                e.target.value = '';
+            }
         }
 
         function insertVideo() { saveSelection(); document.getElementById('videoInput').click(); }
@@ -604,45 +901,63 @@
             }, 30);
         }
 
-        function savePost() {
+        async function savePost() {
             const title = document.getElementById('titleInput').value;
             const content = editor.innerHTML;
-            localStorage.setItem('bidul_drafts', JSON.stringify({ title, content }));
-            showToast("임시 저장되었습니다.");
-        }
-        
-        function publishPost() {
-            const title = document.getElementById('titleInput').value;
-            const content = editor.innerHTML;
-            if(!title) return alert("제목을 입력하세요.");
-
-            if (editingPostId) {
-                // 기존 글 업데이트
-                const post = posts.find(p => p.id === editingPostId);
-                if (post) {
-                    post.title = title;
-                    post.content = content;
-                    post.date = new Date().toLocaleDateString(); // 수정 날짜로 갱신
-                }
-                editingPostId = null;
-                showToast("수정되었습니다.");
-            } else {
-                // 새 글 등록
-                posts.push({ id: Date.now(), title, content, date: new Date().toLocaleDateString() });
-                showToast("등록되었습니다.");
+            try {
+                await dbSet('drafts', { title, content, savedAt: new Date().toISOString() });
+                localStorage.removeItem('bidul_drafts');
+                showToast('임시 저장되었습니다.');
+            } catch (error) {
+                showStorageError(error);
             }
-            
-            localStorage.setItem('bidul_posts', JSON.stringify(posts));
-            localStorage.removeItem('bidul_drafts');
-            goHome();
         }
 
-        function deletePost() {
-            if(!confirm('정말 삭제하시겠습니까?')) return;
-            posts = posts.filter(p => p.id !== currentViewId);
-            localStorage.setItem('bidul_posts', JSON.stringify(posts));
-            showToast("삭제되었습니다.");
-            goHome();
+        async function publishPost() {
+            const title = document.getElementById('titleInput').value.trim();
+            const content = editor.innerHTML;
+            if (!title) return alert('제목을 입력하세요.');
+
+            // 저장이 성공하기 전에는 화면의 기존 글 목록을 변경하지 않습니다.
+            let nextPosts;
+            const now = new Date().toLocaleDateString();
+            if (editingPostId !== null && editingPostId !== undefined) {
+                const exists = posts.some(p => p.id === editingPostId);
+                if (!exists) return alert('수정할 글을 찾을 수 없습니다. 목록으로 돌아간 뒤 다시 시도해 주세요.');
+                nextPosts = posts.map(p => p.id === editingPostId
+                    ? { ...p, title, content, date: now }
+                    : p);
+            } else {
+                nextPosts = [...posts, { id: Date.now(), title, content, date: now }];
+            }
+
+            try {
+                await dbSet('posts', nextPosts);
+                posts = nextPosts;
+                const wasEditing = editingPostId !== null && editingPostId !== undefined;
+                editingPostId = null;
+                try { await dbDelete('drafts'); } catch (error) { console.warn('임시 저장 삭제 실패:', error); }
+                localStorage.removeItem('bidul_posts');
+                localStorage.removeItem('bidul_drafts');
+                showToast(wasEditing ? '수정되었습니다.' : '등록되었습니다.');
+                goHome();
+            } catch (error) {
+                showStorageError(error);
+            }
+        }
+
+        async function deletePost() {
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+            const nextPosts = posts.filter(p => p.id !== currentViewId);
+            try {
+                await dbSet('posts', nextPosts);
+                posts = nextPosts;
+                localStorage.removeItem('bidul_posts');
+                showToast('삭제되었습니다.');
+                goHome();
+            } catch (error) {
+                showStorageError(error);
+            }
         }
 
         function renderPosts() {
@@ -657,8 +972,9 @@
                 const item = document.createElement('div');
                 item.className = 'post-item';
                 item.onclick = () => goView(p.id);
-                const text = p.content.replace(/<[^>]*>?/gm, '').substring(0, 100);
-                item.innerHTML = `<div class="post-title">${escapeHtml(p.title)}</div><div style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${escapeHtml(text)}...</div>`;
+                const plainContent = String(p.content || '').replace(/<[^>]*>?/gm, '');
+                const text = plainContent.substring(0, 100);
+                item.innerHTML = `<div class="post-title">${escapeHtml(p.title || '(제목 없음)')}</div><div style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${escapeHtml(text)}${plainContent.length > 100 ? '...' : ''}</div>`;
                 listDiv.appendChild(item);
             });
         }
@@ -675,5 +991,5 @@
             setTimeout(() => t.style.display = 'none', 2000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4b7a2e1ddf8fa65',t:'MTc5MjE1OTcxMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
