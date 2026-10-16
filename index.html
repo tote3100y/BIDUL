@@ -3,677 +3,1144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIDUL</title>
-    <!-- 아이콘 설정 -->
+    <title>BIDUL - 블로그 에디터</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-
-    <!-- Ponytail 라이브러리 연동 -->
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- 구글 폰트 (나눔고딕, Noto Sans KR, 나눔명조) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Ponytail Plugin -->
     <script src="https://cdn.jsdelivr.net/gh/dietrichgebert/ponytail@main/ponytail.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap');
-
-        /* 테마 변수 설정 (라이트 / 다크모드) */
         :root {
             --bg-main: #f4f4f4;
             --bg-paper: #ffffff;
             --text-main: #111111;
             --text-sub: #555555;
-            --text-muted: #bbbbbb;
-            --border-light: #eeeeee;
-            --border-main: #e5e5e5;
-            --border-dark: #dcdcdc;
-            --hover-bg: #f9f9f9;
-            --btn-pub-bg: #555555;
+            --text-muted: #888888;
+            --border-light: #eee;
+            --border-main: #ddd;
+            --border-dark: #333;
+            --hover-bg: #eaeaea;
+            --btn-pub-bg: #444444;
             --btn-pub-text: #ffffff;
             --shadow: rgba(0,0,0,0.05);
-            --modal-overlay: rgba(0,0,0,0.5);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
         }
 
-        .dark-mode {
+        body.dark-mode {
             --bg-main: #121212;
             --bg-paper: #1e1e1e;
-            --text-main: #eeeeee;
-            --text-sub: #aaaaaa;
-            --text-muted: #666666;
-            --border-light: #2a2a2a;
-            --border-main: #333333;
-            --border-dark: #444444;
+            --text-main: #e0e0e0;
+            --text-sub: #aaa;
+            --text-muted: #666;
+            --border-light: #2c2c2c;
+            --border-main: #333;
+            --border-dark: #666;
             --hover-bg: #2a2a2a;
-            --btn-pub-bg: #888888;
-            --btn-pub-text: #111111;
-            --shadow: rgba(0,0,0,0.5);
-            --modal-overlay: rgba(0,0,0,0.7);
+            --btn-pub-bg: #555555;
+            --btn-pub-text: #ffffff;
+            --shadow: rgba(0,0,0,0.3);
+            --modal-overlay: rgba(0, 0, 0, 0.7);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            border-radius: 0 !important;
+        }
 
         body {
             font-family: 'Noto Sans KR', sans-serif;
             background-color: var(--bg-main);
             color: var(--text-main);
-            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        .fixed-header {
-            position: fixed; top: 0; left: 0; right: 0;
-            z-index: 1000; background: var(--bg-paper);
-            transition: background-color 0.3s;
-        }
-
-        .toolbar-row-1 {
-            display: flex; align-items: center; justify-content: space-between;
-            height: 54px; padding: 0 20px; border-bottom: 1px solid var(--border-main);
-        }
-        .logo-area { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .logo-img { width: 28px; height: 28px; object-fit: cover; }
-        .logo-text { font-size: 20px; font-weight: 900; color: var(--text-main); letter-spacing: 1px; }
-
-        .action-buttons { display: flex; align-items: center; gap: 8px; }
-
-        .menu-container { position: relative; display: inline-block; }
-        .icon-btn {
-            background: none; border: none; cursor: pointer;
-            color: var(--text-sub); padding: 5px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .icon-btn:hover { color: var(--text-main); }
-        
-        .dropdown {
-            display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
-            background: var(--bg-paper); border: 1px solid var(--border-main);
-            box-shadow: 0 4px 12px var(--shadow); min-width: 150px; z-index: 2000;
-        }
-        .dropdown.show { display: block; }
-        .dropdown-item {
-            padding: 12px 16px; font-size: 13px; color: var(--text-main);
-            cursor: pointer; border-bottom: 1px solid var(--border-light); font-weight: 500;
-        }
-        .dropdown-item:last-child { border-bottom: none; }
-        .dropdown-item:hover { background: var(--hover-bg); }
-
-        .btn {
-            padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
-            border-radius: 0; border: 1px solid var(--border-dark); font-family: inherit; transition: all 0.2s;
-        }
-        .btn-save { background: var(--bg-paper); color: var(--text-main); }
-        .btn-save:hover { background: var(--hover-bg); }
-        .btn-publish { background: var(--btn-pub-bg); color: var(--btn-pub-text); border-color: var(--btn-pub-bg); }
-        .btn-publish:hover { opacity: 0.8; }
-
-        .toolbar-row-2 {
-            display: flex; align-items: center; height: 70px; padding: 0 15px;
-            border-bottom: 1px solid var(--border-light); gap: 2px;
-        }
-        .tool-btn {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 58px; height: 58px; background: none; border: none; cursor: pointer; color: var(--text-sub);
-            border-radius: 0;
-        }
-        .tool-btn:hover { background-color: var(--hover-bg); color: var(--text-main); }
-        .tool-btn svg { width: 22px; height: 22px; margin-bottom: 4px; stroke-width: 1.5; }
-        .tool-btn span { font-size: 11px; }
-
-        .toolbar-row-3 {
-            display: flex; align-items: center; height: 38px; padding: 0 20px;
-            border-bottom: 1px solid var(--border-main); gap: 15px;
-        }
-        .font-select, .size-select {
-            border: none; outline: none; -webkit-appearance: none;
-            background: transparent; padding-right: 5px; font-size: 13px; color: var(--text-sub); cursor: pointer;
+        button, input, select {
             font-family: inherit;
-        }
-        .font-select option, .size-select option { background: var(--bg-paper); color: var(--text-main); }
-
-        .editor-outer, .view-outer {
-            margin-top: 162px; padding-bottom: 100px; display: flex; justify-content: center;
-        }
-        .view-outer { margin-top: 54px; }
-        .editor-paper {
-            width: 820px; min-height: 800px; background: var(--bg-paper); padding: 60px 80px;
-            border: 1px solid var(--border-main); box-shadow: 0 2px 10px var(--shadow); transition: background-color 0.3s;
+            color: inherit;
         }
 
-        .title-area { width: 100%; margin-bottom: 30px; }
-        .title-input {
-            width: 100%; border: none; outline: none; font-size: 30px; font-weight: 500;
-            color: var(--text-main); padding-bottom: 15px; font-family: inherit; background: transparent;
+        /* ---------------- FIXED HEADER (3 ROWS) ---------------- */
+        #fixedHeader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-paper);
+            border-bottom: 1px solid var(--border-main);
+            z-index: 1000;
+            box-shadow: 0 2px 5px var(--shadow);
         }
-        .title-input::placeholder { color: var(--text-muted); }
-        .title-line { width: 100%; height: 1px; background: var(--border-light); }
 
-        .content-editor {
-            width: 100%; min-height: 600px; border: none; outline: none;
-            font-size: 16px; line-height: 1.8; color: var(--text-main); word-break: break-all; background: transparent;
+        .header-row {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-light);
         }
-        .content-editor:empty:before { content: attr(data-placeholder); color: var(--text-muted); }
-
-        .media-container { margin: 25px 0; background: #000; line-height: 0; }
-        .media-container video, .media-container iframe { width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9; }
-        img { max-width: 100%; height: auto; margin: 20px 0; display: block; }
-
-        /* ===== 접기/펼치기 블록 (박스 없음) ===== */
-        .fold-block {
-            margin: 12px 0;
+        .header-row:last-child {
+            border-bottom: none;
         }
-        .fold-header {
+
+        /* ROW 1: Logo & Global Actions */
+        .row-1 {
+            height: 44px;
+            justify-content: space-between;
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+        .header-logo img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+        .header-actions {
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+        .btn-hdr {
+            background: #e5e5e5;
+            border: 1px solid #ccc;
+            padding: 5px 12px;
+            font-size: 13px;
             cursor: pointer;
-            user-select: none;
+            color: #333;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        body.dark-mode .btn-hdr {
+            background: #333;
+            border: 1px solid #444;
+            color: #eee;
+        }
+        .btn-hdr:hover {
+            opacity: 0.85;
+        }
+        .btn-hdr-publish {
+            background: var(--btn-pub-bg);
+            border: 1px solid var(--btn-pub-bg);
+            color: var(--btn-pub-text);
+        }
+
+        /* ROW 2: Media Insertion Buttons */
+        .row-2 {
+            height: 38px;
+            gap: 4px;
+            background-color: var(--bg-paper);
+        }
+
+        /* ROW 3: Text Formatting Toolbar */
+        .row-3 {
+            height: 38px;
+            gap: 2px;
+            background-color: var(--bg-paper);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        /* Tool Toolbar Elements */
+        .tool-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 4px 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 28px;
             color: var(--text-main);
-            font-weight: 700;
-            list-style: none;
         }
-        .fold-header::-webkit-details-marker { display: none; }
-        .fold-header::marker { content: ''; }
+        .tool-btn:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--border-main);
+        }
+        .tool-btn.active {
+            background-color: var(--hover-bg);
+            font-weight: bold;
+            border-color: var(--border-dark);
+        }
 
-        .fold-arrow {
-            display: flex; align-items: center; justify-content: center;
+        .divider {
+            width: 1px;
+            height: 16px;
+            background-color: var(--border-main);
+            margin: 0 4px;
+        }
+
+        /* Custom Borderless Select Dropdowns */
+        .select-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .select-wrapper select {
+            appearance: none;
+            -webkit-appearance: none;
+            background: transparent;
+            border: none;
+            padding: 4px 18px 4px 6px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-main);
+            outline: none;
+        }
+        .select-wrapper select option {
+            background-color: var(--bg-paper);
+            color: var(--text-main);
+        }
+        .select-wrapper::after {
+            content: '∨';
+            position: absolute;
+            right: 4px;
+            pointer-events: none;
+            font-size: 10px;
             color: var(--text-sub);
-            transition: transform 0.2s ease;
         }
-        .fold-arrow svg { width: 16px; height: 16px; }
 
-        /* 열렸을 때 화살표 회전 (▶ -> ▼) */
-        details.fold-block[open] > .fold-header .fold-arrow {
+        /* Three Dots Menu */
+        .menu-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .btn-menu {
+            background: transparent;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            width: 32px;
+            height: 32px;
+        }
+        .btn-menu:hover {
+            background-color: var(--hover-bg);
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: var(--bg-paper);
+            border: 1px solid var(--border-main);
+            box-shadow: 0 4px 10px var(--shadow);
+            z-index: 2000;
+            min-width: 160px;
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
+        .dropdown-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+        }
+        .dropdown-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* ---------------- PAGE LAYOUT ---------------- */
+        #appContainer {
+            margin-top: 121px; /* 44px + 38px + 38px + 1px borders */
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 20px 0 60px 0;
+        }
+
+        .paper-page {
+            width: 820px;
+            max-width: 100%;
+            background-color: var(--bg-paper);
+            min-height: 800px;
+            box-shadow: 0 0 10px var(--shadow);
+            padding: 40px;
+            display: none;
+        }
+        .paper-page.active {
+            display: block;
+        }
+
+        /* WRITE PAGE */
+        .editor-title-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 28px;
+            font-weight: bold;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            outline: none;
+            background: transparent;
+            color: var(--text-main);
+        }
+        .editor-title-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        #contentEditor {
+            min-height: 600px;
+            outline: none;
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-main);
+            transition: outline 0.2s ease, background-color 0.2s ease;
+        }
+        #contentEditor[placeholder]:empty:before {
+            content: attr(placeholder);
+            color: var(--text-muted);
+            cursor: text;
+        }
+        
+        /* Drag and Drop Visual Feedback */
+        #contentEditor.drag-over {
+            outline: 2px dashed var(--border-dark) !important;
+            outline-offset: -4px;
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        body.dark-mode #contentEditor.drag-over {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        /* Media Elements inside Content Editor */
+        .editor-img-wrap, .editor-video-wrap, .editor-iframe-wrap {
+            margin: 15px 0;
+            text-align: center;
+        }
+        .editor-img-wrap img, .editor-video-wrap video {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+        .editor-iframe-wrap {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        .editor-iframe-wrap iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Borderless Fold Block ( 접기/펼치기 ) */
+        details.fold-block {
+            margin: 12px 0;
+            padding: 4px 0;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        summary.fold-header {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            color: var(--text-main);
+            outline: none;
+            user-select: none;
+            padding: 2px 0;
+        }
+        summary.fold-header::-webkit-details-marker {
+            display: none;
+        }
+        .fold-arrow {
+            display: inline-block;
+            transition: transform 0.2s ease;
+            font-size: 12px;
+            width: 14px;
+            text-align: center;
+            color: var(--text-sub);
+        }
+        details[open] > summary .fold-arrow {
             transform: rotate(90deg);
         }
-
         .fold-title {
-            flex: 1; outline: none; border: none; background: transparent;
-            font-size: inherit; color: inherit; font-family: inherit;
+            outline: none;
+            border-bottom: 1px dashed var(--border-main);
+            padding-bottom: 2px;
         }
-        .fold-title:empty:before { content: attr(data-placeholder); color: var(--text-muted); font-weight: normal; }
-
         .fold-body {
-            padding-left: 22px; /* 화살표 너비만큼 들여쓰기 */
-            padding-top: 6px;
+            padding: 8px 0 4px 20px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        /* HOME PAGE */
+        .home-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-dark);
+        }
+        .post-list {
+            list-style: none;
+        }
+        .post-item {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .post-info {
+            cursor: pointer;
+            flex: 1;
+        }
+        .post-item-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .post-item-date {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .post-item-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* VIEW PAGE */
+        .view-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .view-date {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .view-content {
             font-size: 15px;
-            line-height: 1.8;
-            color: var(--text-sub);
+            line-height: 1.7;
         }
-        .fold-body:empty:before { content: '내용을 입력하세요...'; color: var(--text-muted); }
 
-        .content-editor .fold-block { user-select: text; }
-        .content-editor .fold-title { cursor: text; }
-        .content-editor .fold-body { min-height: 30px; }
-
-        /* 홈 화면 */
-        .home-container {
-            margin-top: 54px; width: 820px; margin-left: auto; margin-right: auto;
-            background: var(--bg-paper); min-height: 100vh; padding: 40px 60px; border: 1px solid var(--border-main);
-        }
-        .post-item { padding: 25px 0; border-bottom: 1px solid var(--border-light); cursor: pointer; }
-        .post-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
-
+        /* MODAL DIALOGS */
         .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--modal-overlay); z-index: 2000; align-items: center; justify-content: center;
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--modal-overlay);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
         }
-        .modal-overlay.show { display: flex; }
-        .modal { background: var(--bg-paper); padding: 25px; width: 400px; border-radius: 0; }
-        .modal h3 { color: var(--text-main); font-size: 16px; margin-bottom: 15px; }
-        .modal-input { 
-            width: 100%; padding: 10px; border: 1px solid var(--border-dark); margin-bottom: 20px; 
-            outline: none; background: transparent; color: var(--text-main);
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background-color: var(--bg-paper);
+            border: 1px solid var(--border-dark);
+            padding: 20px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+        .modal-box h3 {
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .modal-box input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-main);
+            color: var(--text-main);
+            margin-bottom: 12px;
+            outline: none;
+        }
+        .modal-btns {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
         }
 
-        .hidden { display: none !important; }
-        .toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: var(--text-main); color: var(--bg-paper); padding: 10px 20px; 
-            font-size: 13px; z-index: 3000; display: none; font-weight: bold;
+        /* Hidden inputs */
+        input[type="file"] {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- 에디터 헤더 -->
-    <div class="fixed-header hidden" id="writeHeader">
-        <div class="toolbar-row-1">
-            <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
-                <span class="logo-text">BIDUL</span>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-save" onclick="savePost()">저장</button>
-                <button class="btn btn-publish" onclick="publishPost()">등록</button>
-                <div class="menu-container">
-                    <button class="icon-btn" onclick="toggleMenu(event, 'writeMenu')">
+    <!-- ---------------- FIXED HEADER ---------------- -->
+    <header id="fixedHeader">
+        <!-- ROW 1: Logo & Global Actions -->
+        <div class="header-row row-1">
+            <a class="header-logo" id="logoBtn">
+                <img src="icon.png" alt="BIDUL Logo" onerror="this.style.display='none'">
+                <span>BIDUL</span>
+            </a>
+            <div class="header-actions">
+                <!-- Home State Actions -->
+                <div id="homeHeaderActions">
+                    <button class="btn-hdr btn-hdr-publish" id="navWriteBtn">글쓰기</button>
+                </div>
+                <!-- Write State Actions -->
+                <div id="writeHeaderActions" style="display: none;">
+                    <button class="btn-hdr" id="saveDraftBtn">임시저장</button>
+                    <button class="btn-hdr btn-hdr-publish" id="publishBtn">발행</button>
+                </div>
+                <!-- View State Actions -->
+                <div id="viewHeaderActions" style="display: none;">
+                    <button class="btn-hdr" id="editPostBtn">수정</button>
+                    <button class="btn-hdr" id="deletePostBtn">삭제</button>
+                    <button class="btn-hdr" id="backToListBtn">목록으로</button>
+                </div>
+
+                <!-- Three Dots Dropdown Menu -->
+                <div class="menu-wrapper">
+                    <button class="btn-menu" id="menuToggleBtn" title="메뉴">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                             <circle cx="12" cy="5" r="2"></circle>
                             <circle cx="12" cy="12" r="2"></circle>
                             <circle cx="12" cy="19" r="2"></circle>
                         </svg>
                     </button>
-                    <div class="dropdown" id="writeMenu">
-                        <div class="dropdown-item" onclick="toggleDarkMode()">다크모드 전환</div>
-                        <div class="dropdown-item" onclick="exportCache()">캐시 내보내기</div>
-                        <div class="dropdown-item" onclick="document.getElementById('importInput').click()">캐시 불러오기</div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <button class="dropdown-item" id="toggleDarkModeBtn">다크 모드 전환</button>
+                        <button class="dropdown-item" id="exportCacheBtn">캐시 백업 (Export)</button>
+                        <button class="dropdown-item" id="importCacheBtn">캐시 복원 (Import)</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="toolbar-row-2">
-            <button class="tool-btn" onclick="insertImage()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
-                <span>사진</span>
-            </button>
-            <button class="tool-btn" onclick="insertVideo()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg>
-                <span>영상</span>
-            </button>
-            <button class="tool-btn" onclick="openLinkModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                <span>링크</span>
-            </button>
-            <!-- 접기 기능 -->
-            <button class="tool-btn" onclick="insertFoldBlock()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-                <span>접기</span>
-            </button>
+
+        <!-- ROW 2: Media Tools (Active on Write Page) -->
+        <div class="header-row row-2" id="mediaHeaderRow">
+            <button class="tool-btn" id="btnInsertPhoto">📷 사진</button>
+            <button class="tool-btn" id="btnInsertVideo">🎥 동영상</button>
+            <button class="tool-btn" id="btnInsertLink">🔗 링크</button>
+            <button class="tool-btn" id="btnInsertFold">▶ 접기/펼치기</button>
+            <input type="file" id="photoInput" accept="image/*" multiple>
+            <input type="file" id="videoInput" accept="video/*">
         </div>
-        <div class="toolbar-row-3">
-            <select class="font-select" id="fontSelect" onchange="updateStyle()">
-                <option value="'Nanum Gothic'">나눔고딕 ▾</option>
-                <option value="'Noto Sans KR'">본고딕 ▾</option>
-                <option value="serif">명조체 ▾</option>
-            </select>
-            <select class="size-select" id="sizeSelect" onchange="updateStyle()">
-                <option value="13px">13 ▾</option>
-                <option value="16px" selected>16 ▾</option>
-                <option value="19px">19 ▾</option>
-                <option value="24px">24 ▾</option>
-            </select>
+
+        <!-- ROW 3: Text Formatting Toolbar -->
+        <div class="header-row row-3" id="formatHeaderRow">
+            <!-- Font Selection -->
+            <div class="select-wrapper">
+                <select id="fontSelect" title="폰트 선택">
+                    <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+                    <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+                    <option value="'Nanum Myeongjo', serif">나눔명조</option>
+                </select>
+            </div>
+
+            <!-- Font Size -->
+            <div class="select-wrapper">
+                <select id="fontSizeSelect" title="크기 선택">
+                    <option value="13px">13</option>
+                    <option value="15px" selected>15</option>
+                    <option value="18px">18</option>
+                    <option value="20px">20</option>
+                    <option value="24px">24</option>
+                </select>
+            </div>
+
+            <div class="divider"></div>
+
+            <button class="tool-btn" id="btnBold" title="굵게"><b>B</b></button>
+            <button class="tool-btn" id="btnItalic" title="기울임"><i>I</i></button>
+            <button class="tool-btn" id="btnUnderline" title="밑줄"><u>U</u></button>
+            <button class="tool-btn" id="btnStrike" title="취소선"><s>S</s></button>
+
+            <div class="divider"></div>
+
+            <button class="tool-btn" id="btnAlignLeft" title="왼쪽 정렬">Align L</button>
+            <button class="tool-btn" id="btnAlignCenter" title="가운데 정렬">Align C</button>
+            <button class="tool-btn" id="btnAlignRight" title="오른쪽 정렬">Align R</button>
         </div>
+    </header>
+
+    <!-- ---------------- APP MAIN CONTAINER ---------------- -->
+    <div id="appContainer">
+        <!-- HOME PAGE -->
+        <main class="paper-page active" id="homePage">
+            <h2 class="home-title">전체 글 목록</h2>
+            <ul class="post-list" id="postListContainer">
+                <!-- Posts dynamic insertion -->
+            </ul>
+        </main>
+
+        <!-- WRITE / EDIT PAGE -->
+        <main class="paper-page" id="writePage">
+            <input type="text" id="postTitleInput" class="editor-title-input" placeholder="제목을 입력하세요">
+            <div id="contentEditor" contenteditable="true" placeholder="내용을 입력하세요... (이미지를 여기에 드래그 앤 드롭할 수도 있습니다)"></div>
+        </main>
+
+        <!-- VIEW PAGE -->
+        <main class="paper-page" id="viewPage">
+            <h1 class="view-title" id="viewPostTitle"></h1>
+            <div class="view-date" id="viewPostDate"></div>
+            <div class="view-content" id="viewPostContent"></div>
+        </main>
     </div>
 
-    <!-- 홈 헤더 -->
-    <div class="fixed-header" id="homeHeader">
-        <div class="toolbar-row-1">
-            <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
-                <span class="logo-text">BIDUL</span>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-publish" onclick="goWrite()">글쓰기</button>
-                <div class="menu-container">
-                    <button class="icon-btn" onclick="toggleMenu(event, 'homeMenu')">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                            <circle cx="12" cy="5" r="2"></circle>
-                            <circle cx="12" cy="12" r="2"></circle>
-                            <circle cx="12" cy="19" r="2"></circle>
-                        </svg>
-                    </button>
-                    <div class="dropdown" id="homeMenu">
-                        <div class="dropdown-item" onclick="toggleDarkMode()">다크모드 전환</div>
-                        <div class="dropdown-item" onclick="exportCache()">캐시 내보내기</div>
-                        <div class="dropdown-item" onclick="document.getElementById('importInput').click()">캐시 불러오기</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Hidden Input for Cache Import -->
+    <input type="file" id="importFileInput" accept=".json">
 
-    <!-- 글 보기 헤더 -->
-    <div class="fixed-header hidden" id="viewHeader">
-        <div class="toolbar-row-1">
-            <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
-                <span class="logo-text">BIDUL</span>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-save" onclick="goHome()">목록</button>
-                <!-- 수정 버튼 추가 -->
-                <button class="btn btn-save" onclick="editPost()">수정</button>
-                <button class="btn btn-publish" onclick="deletePost()" style="background:#cc0000; border-color:#cc0000;">삭제</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 에디터 영역 -->
-    <div class="editor-outer hidden" id="writePage">
-        <div class="editor-paper">
-            <div class="title-area">
-                <input type="text" class="title-input" id="titleInput" placeholder="제목을 입력하세요">
-                <div class="title-line"></div>
-            </div>
-            <div class="content-editor" id="contentEditor" contenteditable="true" data-placeholder="내용을 입력하세요..."></div>
-        </div>
-    </div>
-
-    <!-- 글 보기 영역 -->
-    <div class="view-outer hidden" id="viewPage">
-        <div class="editor-paper">
-            <div class="title-area">
-                <h1 id="viewTitle" style="font-size:30px; font-weight:500; color:var(--text-main); margin-bottom:10px;"></h1>
-                <div id="viewDate" style="font-size:13px; color:var(--text-sub); margin-bottom:20px;"></div>
-                <div class="title-line"></div>
-            </div>
-            <div class="content-editor" id="viewContent" contenteditable="false" style="min-height:auto;"></div>
-        </div>
-    </div>
-
-    <!-- 홈 화면 -->
-    <div class="home-container" id="homePage">
-        <h2 style="margin-bottom:20px; font-weight:500; color:var(--text-main);">전체 글</h2>
-        <div id="postList"></div>
-    </div>
-
-    <!-- 링크 모달 -->
+    <!-- Modal Dialog: Link Embedding -->
     <div class="modal-overlay" id="linkModal">
-        <div class="modal">
-            <h3>링크 삽입</h3>
-            <input type="text" class="modal-input" id="linkInput" placeholder="유튜브 주소 또는 웹 링크">
-            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                <button class="btn btn-save" onclick="closeLinkModal()">취소</button>
-                <button class="btn btn-publish" onclick="insertLink()">확인</button>
+        <div class="modal-box">
+            <h3>링크 또는 유튜브 주소 삽입</h3>
+            <input type="text" id="linkUrlInput" placeholder="https://...">
+            <div class="modal-btns">
+                <button class="btn-hdr" id="modalCancelBtn">취소</button>
+                <button class="btn-hdr btn-hdr-publish" id="modalConfirmBtn">확인</button>
             </div>
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
-    <input type="file" id="imageInput" accept="image/*" hidden onchange="handleImage(event)">
-    <input type="file" id="videoInput" accept="video/*" hidden onchange="handleVideo(event)">
-    <input type="file" id="importInput" accept=".json" hidden onchange="importCache(event)">
-
+    <!-- ---------------- SCRIPT LOGIC ---------------- -->
     <script>
-        let posts = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
-        let currentViewId = null;
-        let editingPostId = null; // 수정 중인 글 ID
-        let savedRange = null;
+        // ---------------- INDEXEDDB STORAGE (대용량 이미지 지원) ----------------
+        const DB_NAME = 'BidulDB';
+        const DB_VERSION = 1;
+        let db;
 
-        if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
-
-        window.addEventListener('DOMContentLoaded', () => {
-            if (typeof Ponytail !== 'undefined') new Ponytail('#contentEditor');
-            renderPosts();
-        });
-
-        const editor = document.getElementById('contentEditor');
-        
-        function saveSelection() {
-            if (window.getSelection && window.getSelection().rangeCount > 0) {
-                savedRange = window.getSelection().getRangeAt(0);
-            }
-        }
-        function restoreSelection() {
-            editor.focus();
-            if (savedRange && window.getSelection) {
-                try {
-                    const sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(savedRange);
-                } catch(e) {}
-            }
-        }
-        editor.addEventListener('keyup', saveSelection);
-        editor.addEventListener('mouseup', saveSelection);
-        editor.addEventListener('blur', saveSelection);
-
-        // 접기 블록 클릭 시 에디터 포커스 충돌 방지
-        editor.addEventListener('click', function(e) {
-            const title = e.target.closest('.fold-title');
-            const body = e.target.closest('.fold-body');
-            if (title || body) e.stopPropagation();
-        });
-
-        function toggleMenu(e, menuId) {
-            e.stopPropagation();
-            const menu = document.getElementById(menuId);
-            const isShowing = menu.classList.contains('show');
-            document.querySelectorAll('.dropdown').forEach(m => m.classList.remove('show'));
-            if (!isShowing) menu.classList.add('show');
-        }
-        window.onclick = () => document.querySelectorAll('.dropdown').forEach(m => m.classList.remove('show'));
-
-        function toggleDarkMode() {
-            const isDark = document.body.classList.toggle('dark-mode');
-            localStorage.setItem('bidul_darkmode', isDark);
-            showToast(isDark ? "다크모드가 켜졌습니다." : "라이트모드가 켜졌습니다.");
-        }
-
-        function exportCache() {
-            const dataStr = localStorage.getItem('bidul_posts') || '[]';
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `bidul_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click(); URL.revokeObjectURL(url);
-            showToast("데이터를 다운로드했습니다.");
-        }
-
-        function importCache(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                try {
-                    const parsedData = JSON.parse(event.target.result);
-                    if (Array.isArray(parsedData) && confirm('기존 글이 덮어씌워집니다. 진행하시겠습니까?')) {
-                        localStorage.setItem('bidul_posts', JSON.stringify(parsedData));
-                        alert('데이터를 성공적으로 불러왔습니다.');
-                        location.reload();
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('posts')) {
+                        db.createObjectStore('posts', { keyPath: 'id' });
                     }
-                } catch(err) { alert('파일 오류가 발생했습니다.'); }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-        }
-
-        function hideAll() {
-            ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage']
-                .forEach(id => document.getElementById(id).classList.add('hidden'));
-        }
-
-        function goHome() {
-            hideAll();
-            document.getElementById('homeHeader').classList.remove('hidden');
-            document.getElementById('homePage').classList.remove('hidden');
-            renderPosts();
-        }
-
-        // 새 글 쓰기
-        function goWrite() {
-            editingPostId = null; // 수정 모드 해제
-            hideAll();
-            document.getElementById('writeHeader').classList.remove('hidden');
-            document.getElementById('writePage').classList.remove('hidden');
-            document.getElementById('titleInput').value = '';
-            editor.innerHTML = '';
-        }
-
-        // 글 보기
-        function goView(id) {
-            const post = posts.find(p => p.id === id);
-            if(!post) return;
-            currentViewId = id;
-            hideAll();
-            document.getElementById('viewHeader').classList.remove('hidden');
-            document.getElementById('viewPage').classList.remove('hidden');
-            document.getElementById('viewTitle').innerText = post.title;
-            document.getElementById('viewDate').innerText = post.date;
-            document.getElementById('viewContent').innerHTML = post.content;
-        }
-
-        // 글 수정 모드 진입
-        function editPost() {
-            const post = posts.find(p => p.id === currentViewId);
-            if (!post) return;
-            
-            editingPostId = post.id;
-            hideAll();
-            document.getElementById('writeHeader').classList.remove('hidden');
-            document.getElementById('writePage').classList.remove('hidden');
-            
-            document.getElementById('titleInput').value = post.title;
-            editor.innerHTML = post.content;
-        }
-
-        function updateStyle() {
-            editor.style.fontFamily = document.getElementById('fontSelect').value;
-            editor.style.fontSize = document.getElementById('sizeSelect').value;
-        }
-
-        function openLinkModal() { 
-            saveSelection();
-            document.getElementById('linkModal').classList.add('show'); 
-            document.getElementById('linkInput').focus();
-        }
-        function closeLinkModal() { document.getElementById('linkModal').classList.remove('show'); }
-
-        function insertLink() {
-            const url = document.getElementById('linkInput').value;
-            if(!url) return;
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            const videoId = (match && match[2].length === 11) ? match[2] : null;
-            restoreSelection();
-            if (videoId) {
-                const html = `<div class="media-container" contenteditable="false"><iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
-                document.execCommand('insertHTML', false, html);
-            } else {
-                document.execCommand('createLink', false, url);
-            }
-            closeLinkModal();
-            document.getElementById('linkInput').value = '';
-        }
-
-        function insertImage() { saveSelection(); document.getElementById('imageInput').click(); }
-        function handleImage(e) {
-            if (!e.target.files[0]) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                restoreSelection();
-                document.execCommand('insertHTML', false, `<img src="${event.target.result}"><p><br></p>`);
-            };
-            reader.readAsDataURL(e.target.files[0]);
-            e.target.value = '';
-        }
-
-        function insertVideo() { saveSelection(); document.getElementById('videoInput').click(); }
-        function handleVideo(e) {
-            if (!e.target.files[0]) return;
-            const videoUrl = URL.createObjectURL(e.target.files[0]); 
-            const html = `<div class="media-container" contenteditable="false"><video src="${videoUrl}" controls></video></div><p><br></p>`;
-            restoreSelection();
-            document.execCommand('insertHTML', false, html);
-            showToast("영상이 삽입되었습니다.");
-            e.target.value = '';
-        }
-
-        /* ===== 접기/펼치기 블록 (박스 없음) ===== */
-        function insertFoldBlock() {
-            saveSelection();
-            restoreSelection();
-            const id = 'fold-' + Date.now();
-            const html = `
-<details class="fold-block" id="${id}">
-  <summary class="fold-header">
-    <span class="fold-arrow">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-    </span>
-    <span class="fold-title" contenteditable="true" data-placeholder="접기 제목 입력..."></span>
-  </summary>
-  <div class="fold-body" contenteditable="true"><br></div>
-</details>
-<p><br></p>`;
-            document.execCommand('insertHTML', false, html);
-            showToast("접기 기능이 삽입되었습니다.");
-
-            setTimeout(() => {
-                const block = document.getElementById(id);
-                if (!block) return;
-                const titleEl = block.querySelector('.fold-title');
-                if (titleEl) {
-                    titleEl.focus();
-                    const range = document.createRange();
-                    const sel = window.getSelection();
-                    range.selectNodeContents(titleEl);
-                    range.collapse(false);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                }
-            }, 30);
-        }
-
-        function savePost() {
-            const title = document.getElementById('titleInput').value;
-            const content = editor.innerHTML;
-            localStorage.setItem('bidul_drafts', JSON.stringify({ title, content }));
-            showToast("임시 저장되었습니다.");
-        }
-        
-        function publishPost() {
-            const title = document.getElementById('titleInput').value;
-            const content = editor.innerHTML;
-            if(!title) return alert("제목을 입력하세요.");
-
-            if (editingPostId) {
-                // 기존 글 업데이트
-                const post = posts.find(p => p.id === editingPostId);
-                if (post) {
-                    post.title = title;
-                    post.content = content;
-                    post.date = new Date().toLocaleDateString(); // 수정 날짜로 갱신
-                }
-                editingPostId = null;
-                showToast("수정되었습니다.");
-            } else {
-                // 새 글 등록
-                posts.push({ id: Date.now(), title, content, date: new Date().toLocaleDateString() });
-                showToast("등록되었습니다.");
-            }
-            
-            localStorage.setItem('bidul_posts', JSON.stringify(posts));
-            localStorage.removeItem('bidul_drafts');
-            goHome();
-        }
-
-        function deletePost() {
-            if(!confirm('정말 삭제하시겠습니까?')) return;
-            posts = posts.filter(p => p.id !== currentViewId);
-            localStorage.setItem('bidul_posts', JSON.stringify(posts));
-            showToast("삭제되었습니다.");
-            goHome();
-        }
-
-        function renderPosts() {
-            const listDiv = document.getElementById('postList');
-            listDiv.innerHTML = '';
-            if(posts.length === 0) {
-                listDiv.innerHTML = "<p style='color:var(--text-muted);'>작성된 글이 없습니다.</p>";
-                return;
-            }
-            posts.forEach((p, i) => { if(!p.id) p.id = Date.now() + i; });
-            [...posts].reverse().forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'post-item';
-                item.onclick = () => goView(p.id);
-                const text = p.content.replace(/<[^>]*>?/gm, '').substring(0, 100);
-                item.innerHTML = `<div class="post-title">${escapeHtml(p.title)}</div><div style="font-size:14px; color:var(--text-sub); line-height:1.5; height:42px; overflow:hidden;">${escapeHtml(text)}...</div>`;
-                listDiv.appendChild(item);
+                    if (!db.objectStoreNames.contains('drafts')) {
+                        db.createObjectStore('drafts', { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e);
             });
         }
 
-        function escapeHtml(text) {
-            const d = document.createElement('div');
-            d.textContent = text || '';
-            return d.innerHTML;
+        async function getAllPostsDB() {
+            return new Promise((resolve) => {
+                const tx = db.transaction('posts', 'readonly');
+                const store = tx.objectStore('posts');
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result.sort((a,b) => b.id - a.id));
+            });
         }
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 2000);
+        async function savePostDB(post) {
+            return new Promise((resolve) => {
+                const tx = db.transaction('posts', 'readwrite');
+                const store = tx.objectStore('posts');
+                store.put(post);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        async function deletePostDB(id) {
+            return new Promise((resolve) => {
+                const tx = db.transaction('posts', 'readwrite');
+                const store = tx.objectStore('posts');
+                store.delete(id);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        async function saveDraftDB(draft) {
+            return new Promise((resolve) => {
+                const tx = db.transaction('drafts', 'readwrite');
+                const store = tx.objectStore('drafts');
+                store.put(draft);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        async function getAllDraftsDB() {
+            return new Promise((resolve) => {
+                const tx = db.transaction('drafts', 'readonly');
+                const store = tx.objectStore('drafts');
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result);
+            });
+        }
+
+        // ---------------- APP LOGIC ----------------
+        let currentPostId = null;
+        let savedRange = null;
+
+        // Element References
+        const homePage = document.getElementById('homePage');
+        const writePage = document.getElementById('writePage');
+        const viewPage = document.getElementById('viewPage');
+
+        const homeHeaderActions = document.getElementById('homeHeaderActions');
+        const writeHeaderActions = document.getElementById('writeHeaderActions');
+        const viewHeaderActions = document.getElementById('viewHeaderActions');
+        const mediaHeaderRow = document.getElementById('mediaHeaderRow');
+        const formatHeaderRow = document.getElementById('formatHeaderRow');
+
+        const postListContainer = document.getElementById('postListContainer');
+        const postTitleInput = document.getElementById('postTitleInput');
+        const contentEditor = document.getElementById('contentEditor');
+
+        const viewPostTitle = document.getElementById('viewPostTitle');
+        const viewPostDate = document.getElementById('viewPostDate');
+        const viewPostContent = document.getElementById('viewPostContent');
+
+        const linkModal = document.getElementById('linkModal');
+        const linkUrlInput = document.getElementById('linkUrlInput');
+
+        // Initial Initialization
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initDB();
+            initDarkMode();
+            await renderPostList();
+            routeTo('home');
+
+            // Initialize Ponytail Plugin on Editor
+            if (window.Ponytail) {
+                new Ponytail('#contentEditor');
+            }
+
+            // Bind Drag and Drop Events for Editor
+            setupDragAndDrop();
+        });
+
+        // Router
+        async function routeTo(page, id = null) {
+            homePage.classList.remove('active');
+            writePage.classList.remove('active');
+            viewPage.classList.remove('active');
+
+            homeHeaderActions.style.display = 'none';
+            writeHeaderActions.style.display = 'none';
+            viewHeaderActions.style.display = 'none';
+
+            currentPostId = id;
+
+            if (page === 'home') {
+                homePage.classList.add('active');
+                homeHeaderActions.style.display = 'block';
+                mediaHeaderRow.style.visibility = 'hidden';
+                formatHeaderRow.style.visibility = 'hidden';
+                await renderPostList();
+            } else if (page === 'write') {
+                writePage.classList.add('active');
+                writeHeaderActions.style.display = 'block';
+                mediaHeaderRow.style.visibility = 'visible';
+                formatHeaderRow.style.visibility = 'visible';
+
+                if (id) {
+                    const posts = await getAllPostsDB();
+                    const post = posts.find(p => p.id === id);
+                    if (post) {
+                        postTitleInput.value = post.title;
+                        contentEditor.innerHTML = post.content;
+                    }
+                } else {
+                    postTitleInput.value = '';
+                    contentEditor.innerHTML = '';
+                }
+            } else if (page === 'view') {
+                viewPage.classList.add('active');
+                viewHeaderActions.style.display = 'block';
+                mediaHeaderRow.style.visibility = 'hidden';
+                formatHeaderRow.style.visibility = 'hidden';
+
+                const posts = await getAllPostsDB();
+                const post = posts.find(p => p.id === id);
+                if (post) {
+                    viewPostTitle.textContent = post.title;
+                    viewPostDate.textContent = post.date;
+                    viewPostContent.innerHTML = post.content;
+                }
+            }
+        }
+
+        // Home View Routing Button Actions
+        document.getElementById('logoBtn').addEventListener('click', () => routeTo('home'));
+        document.getElementById('navWriteBtn').addEventListener('click', () => routeTo('write'));
+        document.getElementById('backToListBtn').addEventListener('click', () => routeTo('home'));
+
+        // Post Operations
+        async function renderPostList() {
+            const posts = await getAllPostsDB();
+            postListContainer.innerHTML = '';
+            if (posts.length === 0) {
+                postListContainer.innerHTML = '<li style="color:var(--text-muted); padding: 20px 0;">작성된 글이 없습니다.</li>';
+                return;
+            }
+            posts.forEach(post => {
+                const li = document.createElement('li');
+                li.className = 'post-item';
+                li.innerHTML = `
+                    <div class="post-info" onclick="routeTo('view', ${post.id})">
+                        <div class="post-item-title">${escapeHtml(post.title || '제목 없음')}</div>
+                        <div class="post-item-date">${post.date}</div>
+                    </div>
+                    <div class="post-item-actions">
+                        <button class="btn-hdr" onclick="routeTo('write', ${post.id})">수정</button>
+                        <button class="btn-hdr" onclick="deletePost(${post.id})">삭제</button>
+                    </div>
+                `;
+                postListContainer.appendChild(li);
+            });
+        }
+
+        document.getElementById('publishBtn').addEventListener('click', async () => {
+            const title = postTitleInput.value.trim();
+            const content = contentEditor.innerHTML.trim();
+
+            if (!title && !content) {
+                alert('제목이나 내용을 입력해 주세요.');
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            const postObj = {
+                id: currentPostId ? currentPostId : Date.now(),
+                title: title,
+                content: content,
+                date: dateStr
+            };
+
+            await savePostDB(postObj);
+            alert('글이 성공적으로 발행되었습니다.');
+            routeTo('home');
+        });
+
+        document.getElementById('saveDraftBtn').addEventListener('click', async () => {
+            const title = postTitleInput.value.trim();
+            const content = contentEditor.innerHTML.trim();
+            await saveDraftDB({ id: Date.now(), title, content, date: new Date().toLocaleString() });
+            alert('임시 저장이 완료되었습니다.');
+        });
+
+        document.getElementById('editPostBtn').addEventListener('click', () => {
+            if (currentPostId) routeTo('write', currentPostId);
+        });
+
+        document.getElementById('deletePostBtn').addEventListener('click', () => {
+            if (currentPostId) deletePost(currentPostId);
+        });
+
+        window.deletePost = async function(id) {
+            if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
+                await deletePostDB(id);
+                routeTo('home');
+            }
+        };
+
+        // ---------------- MEDIA INSERTION ----------------
+        document.getElementById('btnInsertPhoto').addEventListener('click', () => {
+            document.getElementById('photoInput').click();
+        });
+        document.getElementById('photoInput').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                processImageFiles(Array.from(e.target.files));
+                e.target.value = '';
+            }
+        });
+
+        function processImageFiles(files) {
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgHtml = `<div class="editor-img-wrap" contenteditable="false"><img src="${e.target.result}" alt="Uploaded photo"><br></div><p><br></p>`;
+                    document.execCommand('insertHTML', false, imgHtml);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ---------------- DRAG AND DROP (PC IMAGE DROP) ----------------
+        function setupDragAndDrop() {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                contentEditor.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+                        contentEditor.classList.add('drag-over');
+                    }
+                }, false);
+            });
+
+            ['dragleave', 'dragend'].forEach(eventName => {
+                contentEditor.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    contentEditor.classList.remove('drag-over');
+                }, false);
+            });
+
+            contentEditor.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                contentEditor.classList.remove('drag-over');
+
+                const dt = e.dataTransfer;
+                if (!dt || !dt.files || dt.files.length === 0) return;
+
+                // Caret Placement at Drop Coordinates
+                let range = null;
+                if (document.caretRangeFromPoint) {
+                    range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                } else if (document.caretPositionFromPoint) {
+                    const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                    if (pos) {
+                        range = document.createRange();
+                        range.setStart(pos.offsetNode, pos.offset);
+                        range.collapse(true);
+                    }
+                }
+
+                if (range) {
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+
+                const imageFiles = Array.from(dt.files).filter(file => file.type.startsWith('image/'));
+                if (imageFiles.length > 0) {
+                    processImageFiles(imageFiles);
+                }
+            }, false);
+        }
+
+        // Video Insertion
+        document.getElementById('btnInsertVideo').addEventListener('click', () => {
+            document.getElementById('videoInput').click();
+        });
+        document.getElementById('videoInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const videoUrl = URL.createObjectURL(file);
+                const videoHtml = `<div class="editor-video-wrap" contenteditable="false"><video src="${videoUrl}" controls></video><br></div><p><br></p>`;
+                document.execCommand('insertHTML', false, videoHtml);
+            }
+            e.target.value = '';
+        });
+
+        // Link Insertion
+        document.getElementById('btnInsertLink').addEventListener('click', () => {
+            saveSelection();
+            linkUrlInput.value = '';
+            linkModal.classList.add('show');
+            linkUrlInput.focus();
+        });
+
+        document.getElementById('modalCancelBtn').addEventListener('click', () => {
+            linkModal.classList.remove('show');
+        });
+
+        document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+            const url = linkUrlInput.value.trim();
+            linkModal.classList.remove('show');
+            restoreSelection();
+
+            if (!url) return;
+
+            // Check YouTube URL
+            const ytReg = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = url.match(ytReg);
+
+            if (match && match[1]) {
+                const videoId = match[1];
+                const origin = encodeURIComponent(window.location.origin);
+                const iframeHtml = `<div class="editor-iframe-wrap" contenteditable="false"><iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${origin}" allowfullscreen></iframe></div><p><br></p>`;
+                document.execCommand('insertHTML', false, iframeHtml);
+            } else {
+                const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>&nbsp;`;
+                document.execCommand('insertHTML', false, linkHtml);
+            }
+        });
+
+        // Borderless Fold Block Insertion ( 접기/펼치기 )
+        document.getElementById('btnInsertFold').addEventListener('click', () => {
+            const foldId = 'fold_' + Date.now();
+            const foldHtml = `
+                <details class="fold-block" id="${foldId}">
+                    <summary class="fold-header" contenteditable="false">
+                        <span class="fold-arrow">▶</span>
+                        <span class="fold-title" contenteditable="true" placeholder="접기/펼치기 제목">접기/펼치기 제목 입력</span>
+                    </summary>
+                    <div class="fold-body" contenteditable="true">
+                        <p>내용을 입력하세요...</p>
+                    </div>
+                </details>
+                <p><br></p>
+            `;
+            document.execCommand('insertHTML', false, foldHtml);
+        });
+
+        // Selection Save / Restore Helpers
+        function saveSelection() {
+            const sel = window.getSelection();
+            if (sel.getRangeAt && sel.rangeCount) {
+                savedRange = sel.getRangeAt(0);
+            }
+        }
+        function restoreSelection() {
+            if (savedRange) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+            }
+        }
+
+        // ---------------- FORMATTING COMMANDS ----------------
+        document.getElementById('btnBold').addEventListener('click', () => document.execCommand('bold'));
+        document.getElementById('btnItalic').addEventListener('click', () => document.execCommand('italic'));
+        document.getElementById('btnUnderline').addEventListener('click', () => document.execCommand('underline'));
+        document.getElementById('btnStrike').addEventListener('click', () => document.execCommand('strikeThrough'));
+        document.getElementById('btnAlignLeft').addEventListener('click', () => document.execCommand('justifyLeft'));
+        document.getElementById('btnAlignCenter').addEventListener('click', () => document.execCommand('justifyCenter'));
+        document.getElementById('btnAlignRight').addEventListener('click', () => document.execCommand('justifyRight'));
+
+        document.getElementById('fontSelect').addEventListener('change', (e) => {
+            document.execCommand('fontName', false, e.target.value);
+        });
+
+        document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
+            const size = e.target.value;
+            const sel = window.getSelection();
+            if (sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.fontSize = size;
+                range.surroundContents(span);
+            }
+        });
+
+        // ---------------- THREE DOTS MENU & FEATURES ----------------
+        const menuToggleBtn = document.getElementById('menuToggleBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        menuToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+        document.addEventListener('click', () => dropdownMenu.classList.remove('show'));
+
+        // Dark Mode Toggle
+        const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
+        function initDarkMode() {
+            const isDark = localStorage.getItem('bidul_darkmode') === 'true';
+            if (isDark) document.body.classList.add('dark-mode');
+        }
+        toggleDarkModeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('bidul_darkmode', isDark);
+        });
+
+        // Cache Export (JSON from IndexedDB)
+        document.getElementById('exportCacheBtn').addEventListener('click', async () => {
+            const posts = await getAllPostsDB();
+            const drafts = await getAllDraftsDB();
+            const cacheData = {
+                posts: posts,
+                drafts: drafts,
+                exportDate: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cacheData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `bidul_backup_${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        });
+
+        // Cache Import (JSON to IndexedDB)
+        const importFileInput = document.getElementById('importFileInput');
+        document.getElementById('importCacheBtn').addEventListener('click', () => {
+            importFileInput.click();
+        });
+        importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (imported.posts && Array.isArray(imported.posts)) {
+                        for (const post of imported.posts) {
+                            await savePostDB(post);
+                        }
+                    }
+                    if (imported.drafts && Array.isArray(imported.drafts)) {
+                        for (const draft of imported.drafts) {
+                            await saveDraftDB(draft);
+                        }
+                    }
+                    alert('성공적으로 데이터를 복원했습니다.');
+                    await renderPostList();
+                } catch (err) {
+                    alert('올바르지 않은 JSON 데이터 파일입니다.');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        // Utility: HTML Escaping
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // PWA ServiceWorker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(console.error);
+            });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4b7a2e1ddf8fa65',t:'MTc5MjE1OTcxMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
