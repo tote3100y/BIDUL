@@ -158,6 +158,7 @@
 
         .media-container { margin: 25px 0; background: #000; line-height: 0; }
         .media-container video, .media-container iframe { width: 100%; display: block; outline: none; border: none; aspect-ratio: 16/9; }
+        .video-unavailable { padding: 18px; margin: 12px 0; background: var(--hover-bg); color: var(--text-sub); font-size: 14px; line-height: 1.6; }
         img { max-width: 100%; height: auto; margin: 20px 0; display: block; }
 
         /* ===== 접기/펼치기 블록 (박스 없음) ===== */
@@ -401,6 +402,9 @@
         const BIDUL_DB_NAME = 'BIDUL_DATABASE';
         const BIDUL_DB_VERSION = 1;
         const BIDUL_STORE_NAME = 'appData';
+        // Object URL은 현재 페이지 실행 중 미리보기에만 사용합니다.
+        // 실제 영상 파일은 IndexedDB에 Blob으로 보관해 재접속 후에도 복원합니다.
+        const bidulVideoObjectUrls = new Map();
 
         if (localStorage.getItem('bidul_darkmode') === 'true') document.body.classList.add('dark-mode');
 
@@ -474,6 +478,80 @@
                 alert('저장에 실패했습니다. 브라우저의 사이트 데이터 차단 여부를 확인하고, 다른 BIDUL 탭을 닫은 뒤 다시 시도해 주세요.');
             }
         }
+
+        function getVideoObjectURL(videoId, blob) {
+            const existing = bidulVideoObjectUrls.get(videoId);
+            if (existing) return existing;
+            const objectUrl = URL.createObjectURL(blob);
+            bidulVideoObjectUrls.set(videoId, objectUrl);
+            return objectUrl;
+        }
+
+        // 저장할 HTML에서는 임시 blob: 주소를 제거합니다.
+        // 글을 다시 열 때 video ID를 사용해 IndexedDB의 실제 파일로 연결합니다.
+        function getPersistableContent(container) {
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('video[data-bidul-video-id]').forEach(video => {
+                video.removeAttribute('src');
+                video.querySelectorAll('source').forEach(source => source.removeAttribute('src'));
+            });
+            return clone.innerHTML;
+        }
+
+        function replaceUnavailableVideo(video, message) {
+            const notice = document.createElement('div');
+            notice.className = 'video-unavailable';
+            notice.textContent = message;
+            const wrapper = video.closest('.media-container');
+            if (wrapper) {
+                wrapper.replaceWith(notice);
+            } else {
+                video.replaceWith(notice);
+            }
+        }
+
+        async function hydrateVideos(container) {
+            if (!container || !bidulDB) return;
+            const videoElements = Array.from(container.querySelectorAll('video'));
+            let unavailableCount = 0;
+
+            for (const video of videoElements) {
+                const videoId = video.getAttribute('data-bidul-video-id');
+                if (!videoId) {
+                    // 이전 버전은 blob: URL만 저장했기 때문에 재접속 후 원본을 복구할 수 없습니다.
+                    const oldSrc = video.getAttribute('src') || '';
+                    if (oldSrc.startsWith('blob:')) {
+                        replaceUnavailableVideo(video, '이 영상은 이전 버전에서 임시 주소로만 저장되어 재생할 수 없습니다. 원본 영상 파일을 다시 업로드해 주세요.');
+                        unavailableCount++;
+                    }
+                    continue;
+                }
+
+                try {
+                    const savedBlob = await dbGet(`video:${videoId}`);
+                    if (savedBlob instanceof Blob) {
+                        video.src = getVideoObjectURL(videoId, savedBlob);
+                        video.preload = 'metadata';
+                    } else {
+                        replaceUnavailableVideo(video, '저장된 영상 파일을 찾을 수 없습니다. 원본 영상 파일을 다시 업로드해 주세요.');
+                        unavailableCount++;
+                    }
+                } catch (error) {
+                    console.error('영상 복원 오류:', error);
+                    replaceUnavailableVideo(video, '영상 파일을 불러오지 못했습니다. 저장 공간이나 브라우저 사이트 데이터 설정을 확인해 주세요.');
+                    unavailableCount++;
+                }
+            }
+
+            if (unavailableCount > 0) {
+                showToast('일부 영상은 원본 파일을 다시 업로드해야 합니다.');
+            }
+        }
+
+        window.addEventListener('pagehide', () => {
+            for (const url of bidulVideoObjectUrls.values()) URL.revokeObjectURL(url);
+            bidulVideoObjectUrls.clear();
+        });
 
         async function initializeBidul() {
             if (typeof Ponytail !== 'undefined') {
@@ -712,8 +790,8 @@
             editor.innerHTML = '';
         }
 
-        // 글 보기
-        function goView(id) {
+        // 글 보기: HTML을 표시한 다음 IndexedDB에 보관한 영상 Blob을 다시 연결합니다.
+        async function goView(id) {
             const post = posts.find(p => p.id === id);
             if(!post) return;
             currentViewId = id;
@@ -722,11 +800,13 @@
             document.getElementById('viewPage').classList.remove('hidden');
             document.getElementById('viewTitle').innerText = post.title;
             document.getElementById('viewDate').innerText = post.date;
-            document.getElementById('viewContent').innerHTML = post.content;
+            const viewContent = document.getElementById('viewContent');
+            viewContent.innerHTML = post.content;
+            await hydrateVideos(viewContent);
         }
 
         // 글 수정 모드 진입
-        function editPost() {
+        async function editPost() {
             const post = posts.find(p => p.id === currentViewId);
             if (!post) return;
             
@@ -737,6 +817,7 @@
             
             document.getElementById('titleInput').value = post.title;
             editor.innerHTML = post.content;
+            await hydrateVideos(editor);
         }
 
         function updateStyle() {
@@ -867,14 +948,35 @@
         }
 
         function insertVideo() { saveSelection(); document.getElementById('videoInput').click(); }
-        function handleVideo(e) {
-            if (!e.target.files[0]) return;
-            const videoUrl = URL.createObjectURL(e.target.files[0]); 
-            const html = `<div class="media-container" contenteditable="false"><video src="${videoUrl}" controls></video></div><p><br></p>`;
-            restoreSelection();
-            document.execCommand('insertHTML', false, html);
-            showToast("영상이 삽입되었습니다.");
-            e.target.value = '';
+        async function handleVideo(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            const videoId = `vid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            try {
+                // File/Blob 자체를 IndexedDB에 저장합니다. 이 데이터는 페이지를 닫아도 남습니다.
+                await dbSet(`video:${videoId}`, file);
+                restoreSelection();
+                const html = `<div class="media-container" contenteditable="false"><video data-bidul-video-id="${videoId}" controls preload="metadata"></video></div><p><br></p>`;
+                document.execCommand('insertHTML', false, html);
+                const insertedVideo = Array.from(editor.querySelectorAll('video[data-bidul-video-id]'))
+                    .find(video => video.getAttribute('data-bidul-video-id') === videoId);
+                if (!insertedVideo) {
+                    await dbDelete(`video:${videoId}`);
+                    throw new Error('영상 삽입 위치를 찾지 못했습니다. 에디터 안을 클릭한 뒤 다시 시도해 주세요.');
+                }
+                insertedVideo.src = getVideoObjectURL(videoId, file);
+                showToast('영상이 저장되고 삽입되었습니다.');
+            } catch (error) {
+                console.error('영상 저장/삽입 오류:', error);
+                if (error && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+                    showStorageError(error);
+                } else {
+                    alert(error && error.message ? error.message : '영상을 저장하거나 삽입하지 못했습니다.');
+                }
+            } finally {
+                e.target.value = '';
+            }
         }
 
         /* ===== 접기/펼치기 블록 (박스 없음) ===== */
@@ -914,7 +1016,7 @@
 
         async function savePost() {
             const title = document.getElementById('titleInput').value;
-            const content = editor.innerHTML;
+            const content = getPersistableContent(editor);
             try {
                 await dbSet('drafts', { title, content, savedAt: new Date().toISOString() });
                 localStorage.removeItem('bidul_drafts');
@@ -926,7 +1028,7 @@
 
         async function publishPost() {
             const title = document.getElementById('titleInput').value.trim();
-            const content = editor.innerHTML;
+            const content = getPersistableContent(editor);
             if (!title) return alert('제목을 입력하세요.');
 
             // 저장이 성공하기 전에는 화면의 기존 글 목록을 변경하지 않습니다.
