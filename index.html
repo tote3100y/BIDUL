@@ -211,6 +211,22 @@
         .content-editor .fold-body img { width: 100%; max-width: 100%; height: auto; margin: 12px 0; }
         .content-editor .fold-body .media-container { margin: 12px 0; }
 
+        /* 비밀 글 공간: 블랙 + 블루 바이올렛 */
+        .secret-mode { background: #08070d; color: #f2efff; }
+        .secret-header { background: #0b0912; border-bottom: 1px solid #38305d; color: #f2efff; }
+        .secret-header .logo-text, .secret-header .icon-btn { color: #c4b5fd; }
+        .secret-page { margin: 54px auto 0; width: min(820px, 100%); min-height: calc(100vh - 54px); padding: 34px 28px 70px; background: #0d0b16; border-left: 1px solid #30264f; border-right: 1px solid #30264f; color: #f2efff; }
+        .secret-page h2, .secret-page h3 { color: #c4b5fd; }
+        .secret-field { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #49406e; background: #090811; color: #f2efff; border-radius: 0; font: inherit; outline: none; }
+        .secret-editor { min-height: 180px; padding: 14px; border: 1px solid #49406e; background: #090811; color: #f2efff; line-height: 1.8; outline: none; overflow-wrap: anywhere; }
+        .secret-editor:empty:before { content: attr(data-placeholder); color: #8b82aa; }
+        .secret-btn { background: #4f46e5; border: 1px solid #7c70ff; color: #fff; padding: 9px 15px; cursor: pointer; font: inherit; }
+        .secret-btn.secondary { background: #151126; border-color: #49406e; color: #d8d0ff; }
+        .secret-post { border-bottom: 1px solid #30264f; padding: 18px 0; }
+        .secret-post-title { color: #c4b5fd; font-size: 18px; margin-bottom: 6px; }
+        .secret-post-date { color: #8b82aa; font-size: 12px; margin-bottom: 10px; }
+        .secret-post-content { color: #e7e2f7; line-height: 1.7; overflow-wrap: anywhere; }
+
         /* 홈 화면 */
         .home-container {
             margin-top: 54px; width: 820px; margin-left: auto; margin-right: auto;
@@ -245,7 +261,7 @@
     <div class="fixed-header hidden" id="writeHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
@@ -307,7 +323,7 @@
     <div class="fixed-header" id="homeHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
@@ -334,7 +350,7 @@
     <div class="fixed-header hidden" id="viewHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
@@ -375,6 +391,31 @@
         <div id="postList"></div>
     </div>
 
+    <!-- 숨겨진 비밀 글 공간: 앱 아이콘을 9번 누르면 열림 -->
+    <div class="fixed-header hidden secret-header" id="secretHeader">
+        <div class="toolbar-row-1" style="border-color:#30264f;">
+            <div class="logo-area" onclick="goHome()">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <span class="logo-text">BIDUL</span>
+            </div>
+            <div class="action-buttons">
+                <button class="secret-btn secondary" onclick="clearSecretForm()">새 글</button>
+            </div>
+        </div>
+    </div>
+    <div class="secret-page hidden" id="secretPage">
+        <h2 style="margin-bottom:8px;">비밀 글 공간</h2>
+        <p style="color:#9c91bd; font-size:13px; margin-bottom:24px;">이 공간에 등록한 글은 일반 글 목록과 분리되어 저장됩니다.</p>
+        <input class="secret-field" id="secretTitle" type="text" placeholder="제목">
+        <div class="secret-editor" id="secretContent" contenteditable="true" data-placeholder="비밀 글 내용을 입력하세요..."></div>
+        <div style="display:flex; gap:8px; margin:12px 0 34px; flex-wrap:wrap;">
+            <button class="secret-btn" onclick="publishSecretPost()">비밀 글 등록</button>
+            <button class="secret-btn secondary" onclick="clearSecretForm()">비우기</button>
+        </div>
+        <h3 style="margin-bottom:8px;">비밀 글 목록</h3>
+        <div id="secretPostList"></div>
+    </div>
+
     <!-- 링크 모달 -->
     <div class="modal-overlay" id="linkModal">
         <div class="modal">
@@ -397,6 +438,9 @@
         // 글과 임시 저장은 localStorage 대신 IndexedDB에 저장합니다.
         // IndexedDB는 localStorage보다 큰 데이터를 저장할 수 있어 사진이 포함된 글에 적합합니다.
         let posts = [];
+        let secretPosts = [];
+        let secretIconClicks = 0;
+        let secretSpaceOpen = false;
         let currentViewId = null;
         let editingPostId = null; // 수정 중인 글 ID
         let savedRange = null;
@@ -576,6 +620,8 @@
                     await dbSet('posts', savedPosts);
                 }
                 posts = Array.isArray(savedPosts) ? savedPosts : [];
+                const savedSecretPosts = await dbGet('secretPosts');
+                secretPosts = Array.isArray(savedSecretPosts) ? savedSecretPosts : [];
                 // IndexedDB 저장에 성공한 뒤에만 구버전 복사본을 제거합니다.
                 if (legacyPosts !== null) localStorage.removeItem('bidul_posts');
 
@@ -593,6 +639,7 @@
                     const legacy = JSON.parse(localStorage.getItem('bidul_posts') || '[]');
                     posts = Array.isArray(legacy) ? legacy : [];
                 } catch (_) { posts = []; }
+                try { secretPosts = (await dbGet('secretPosts')) || []; } catch (_) { secretPosts = []; }
                 showToast('저장소 초기화에 문제가 있습니다. 콘솔 오류를 확인해 주세요.');
             }
             renderPosts();
@@ -666,24 +713,40 @@
             })();
         }
 
-        editor.addEventListener('keydown', function(e) {
-            const title = e.target.closest('.fold-title');
-            const body = e.target.closest('.fold-body');
+        function closestFoldRegion(node, selector) {
+            const element = node instanceof Element ? node : (node && node.parentElement);
+            return element ? element.closest(selector) : null;
+        }
 
-            if (title && e.key === 'Enter') {
+        // 문서 캡처 단계에서 먼저 처리합니다. 중첩 contenteditable에서는
+        // 이벤트 대상이 바깥 편집기로 잡힐 수 있으므로 실제 커서 위치도 확인합니다.
+        document.addEventListener('keydown', function(e) {
+            const target = e.target instanceof Element ? e.target : e.target.parentElement;
+            if (!target || (target !== editor && !editor.contains(target))) return;
+            const selection = window.getSelection();
+            const caretNode = selection && selection.rangeCount ? selection.getRangeAt(0).startContainer : null;
+            const title = target.closest('.fold-title') || closestFoldRegion(caretNode, '.fold-title');
+            const body = target.closest('.fold-body') || closestFoldRegion(caretNode, '.fold-body');
+
+            // 편집 화면의 접기 제목에서 Enter를 누르면 본문으로 진입합니다.
+            if (title && editor.contains(title) && (e.key === 'Enter' || e.keyCode === 13 || e.which === 13)) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 const block = title.closest('details.fold-block');
                 if (!block) return;
 
-                // 제목 입력을 마치고 Enter를 누르면 접기를 펼쳐 본문으로 이동합니다.
-                block.open = true;
                 const foldBody = block.querySelector('.fold-body');
-                if (foldBody) focusEditableAt(foldBody, false);
+                block.open = true;
+                // 키 입력에 따른 브라우저 기본 처리가 끝난 뒤에도 펼친 상태와 포커스를 유지합니다.
+                window.setTimeout(function() {
+                    block.open = true;
+                    if (foldBody) focusEditableAt(foldBody, false);
+                }, 0);
                 return;
             }
 
-            if (body && e.key === 'Backspace') {
+            if (body && editor.contains(body) && e.key === 'Backspace') {
                 const block = body.closest('details.fold-block');
                 if (!block || !selectionIsAtEndOf(body)) return;
 
@@ -693,7 +756,7 @@
                 focusEditableAt(getOrCreateAfterFoldParagraph(block), false);
             }
             // 본문 안의 Enter는 기본 contenteditable 동작을 유지해 본문 안에서 줄바꿈합니다.
-        });
+        }, true);
 
         // 드래그한 위치에 커서를 배치합니다. Chrome/Edge와 Firefox를 모두 지원합니다.
         function saveSelectionAtPoint(x, y) {
@@ -838,11 +901,85 @@
         }
 
         function hideAll() {
-            ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage']
+            ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage', 'secretHeader', 'secretPage']
                 .forEach(id => document.getElementById(id).classList.add('hidden'));
         }
 
+        function handleSecretIconClick(event) {
+            if (event) event.stopPropagation();
+            secretIconClicks += 1;
+            if (secretIconClicks >= 9) {
+                secretIconClicks = 0;
+                toggleSecretSpace();
+            }
+        }
+
+        function toggleSecretSpace() {
+            secretSpaceOpen = !secretSpaceOpen;
+            if (secretSpaceOpen) {
+                hideAll();
+                document.body.classList.add('secret-mode');
+                document.getElementById('secretHeader').classList.remove('hidden');
+                document.getElementById('secretPage').classList.remove('hidden');
+                renderSecretPosts();
+            } else {
+                document.body.classList.remove('secret-mode');
+                goHome();
+            }
+        }
+
+        function clearSecretForm() {
+            document.getElementById('secretTitle').value = '';
+            document.getElementById('secretContent').innerHTML = '';
+            document.getElementById('secretTitle').focus();
+        }
+
+        async function publishSecretPost() {
+            const title = document.getElementById('secretTitle').value.trim();
+            const content = document.getElementById('secretContent').innerHTML;
+            if (!title) { alert('비밀 글 제목을 입력하세요.'); return; }
+            const next = [...secretPosts, { id: Date.now(), title, content, date: new Date().toLocaleDateString() }];
+            try {
+                await dbSet('secretPosts', next);
+                secretPosts = next;
+                clearSecretForm();
+                renderSecretPosts();
+                showToast('비밀 글이 등록되었습니다.');
+            } catch (error) { showStorageError(error); }
+        }
+
+        async function deleteSecretPost(id) {
+            if (!confirm('이 비밀 글을 삭제할까요?')) return;
+            const next = secretPosts.filter(post => post.id !== id);
+            try {
+                await dbSet('secretPosts', next);
+                secretPosts = next;
+                renderSecretPosts();
+            } catch (error) { showStorageError(error); }
+        }
+
+        function renderSecretPosts() {
+            const list = document.getElementById('secretPostList');
+            if (!list) return;
+            if (!secretPosts.length) {
+                list.innerHTML = '<p style="color:#8b82aa; padding:14px 0;">등록된 비밀 글이 없습니다.</p>';
+                return;
+            }
+            list.innerHTML = '';
+            [...secretPosts].reverse().forEach(post => {
+                const item = document.createElement('article');
+                item.className = 'secret-post';
+                const title = document.createElement('div'); title.className = 'secret-post-title'; title.textContent = post.title || '(제목 없음)';
+                const date = document.createElement('div'); date.className = 'secret-post-date'; date.textContent = post.date || '';
+                const content = document.createElement('div'); content.className = 'secret-post-content'; content.innerHTML = post.content || '';
+                const remove = document.createElement('button'); remove.className = 'secret-btn secondary'; remove.textContent = '삭제'; remove.style.marginTop = '12px'; remove.onclick = () => deleteSecretPost(post.id);
+                item.append(title, date, content, remove); list.appendChild(item);
+            });
+        }
+
         function goHome() {
+            secretSpaceOpen = false;
+            document.body.classList.remove('secret-mode');
             hideAll();
             document.getElementById('homeHeader').classList.remove('hidden');
             document.getElementById('homePage').classList.remove('hidden');
@@ -886,6 +1023,7 @@
             
             document.getElementById('titleInput').value = post.title;
             editor.innerHTML = post.content;
+            enableFoldEditing(editor);
             await hydrateVideos(editor);
         }
 
@@ -1047,6 +1185,20 @@
             }
         }
 
+        /* 브라우저의 insertHTML 처리 과정에서 제거될 수 있는 접기 편집 속성을 복구합니다. */
+        function enableFoldEditing(container) {
+            if (!container) return;
+            const blocks = [];
+            if (container.matches && container.matches('details.fold-block')) blocks.push(container);
+            blocks.push(...container.querySelectorAll('details.fold-block'));
+            blocks.forEach(block => {
+                const title = block.querySelector('.fold-title');
+                const body = block.querySelector('.fold-body');
+                if (title) title.setAttribute('contenteditable', 'true');
+                if (body) body.setAttribute('contenteditable', 'true');
+            });
+        }
+
         /* ===== 접기/펼치기 블록 (박스 없음) ===== */
         function insertFoldBlock() {
             saveSelection();
@@ -1064,11 +1216,14 @@
 </details>
 <p><br></p>`;
             document.execCommand('insertHTML', false, html);
+            const insertedBlock = document.getElementById(id);
+            enableFoldEditing(insertedBlock);
             showToast("접기 기능이 삽입되었습니다.");
 
             setTimeout(() => {
                 const block = document.getElementById(id);
                 if (!block) return;
+                enableFoldEditing(block);
                 const titleEl = block.querySelector('.fold-title');
                 if (titleEl) {
                     titleEl.focus();
