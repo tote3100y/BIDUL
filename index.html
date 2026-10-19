@@ -629,7 +629,7 @@
         });
 
         // 접기 키보드 규칙:
-        // B(제목) + Enter: 접혀 있으면 A(일반 영역), 펼쳐져 있으면 C(본문)로 이동.
+        // B(제목) + Enter: 접기를 펼치고 C(본문)로 이동.
         // C(본문) + Enter: 본문 안에서만 줄바꿈.
         // C(본문) 맨 끝 + Backspace: A(일반 영역)로 이동.
         function focusEditableAt(element, atEnd = false) {
@@ -676,13 +676,10 @@
                 const block = title.closest('details.fold-block');
                 if (!block) return;
 
-                if (block.open) {
-                    const foldBody = block.querySelector('.fold-body');
-                    if (foldBody) focusEditableAt(foldBody, false);
-                } else {
-                    // 닫힌 접기에서는 열지 않고, 바로 아래 일반 편집 영역으로 이동합니다.
-                    focusEditableAt(getOrCreateAfterFoldParagraph(block), false);
-                }
+                // 제목 입력을 마치고 Enter를 누르면 접기를 펼쳐 본문으로 이동합니다.
+                block.open = true;
+                const foldBody = block.querySelector('.fold-body');
+                if (foldBody) focusEditableAt(foldBody, false);
                 return;
             }
 
