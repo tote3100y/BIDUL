@@ -215,7 +215,7 @@
         .secret-mode { background: #08070d; color: #f2efff; }
         .secret-header { background: #0b0912; border-bottom: 1px solid #38305d; color: #f2efff; }
         .secret-header .logo-text, .secret-header .icon-btn { color: #c4b5fd; }
-        .secret-page { margin: 54px auto 0; width: 820px; max-width: 100%; min-height: calc(100vh - 54px); padding: 40px 60px 70px; background: #0d0b16; border-left: 1px solid #30264f; border-right: 1px solid #30264f; color: #f2efff; }
+        .secret-page { margin: 163px auto 0; width: 820px; max-width: 100%; min-height: calc(100vh - 163px); padding: 40px 60px 70px; background: #0d0b16; border-left: 1px solid #30264f; border-right: 1px solid #30264f; color: #f2efff; }
         .secret-page h2, .secret-page h3 { color: #c4b5fd; }
         .secret-page .secret-title-input { display:block; width:100%; padding:0 0 10px; border:0; border-bottom:1px solid #49406e; background:transparent; color:#f2efff; font-size:30px; font-weight:500; outline:none; font-family:inherit; }
         .secret-page .secret-title-input::placeholder { color:#8b82aa; }
@@ -225,7 +225,7 @@
         .secret-header .tool-btn, .secret-header .font-select, .secret-header .size-select { color:#d8d0ff; border-color:#49406e; background:#0d0b16; }
         .secret-page .title-line { border-color:#49406e; }
         .secret-page .content-editor a { color:#a5b4fc; }
-        @media (max-width: 700px) { .secret-page { padding:28px 22px 60px; } .secret-page .secret-title-input { font-size:25px; } }
+        @media (max-width: 700px) { .secret-page { margin-top:163px; padding:28px 22px 60px; } .secret-page .secret-title-input { font-size:25px; } }
         .secret-btn { background: #4f46e5; border: 1px solid #7c70ff; color: #fff; padding: 9px 15px; cursor: pointer; font: inherit; }
         .secret-btn.secondary { background: #151126; border-color: #49406e; color: #d8d0ff; }
         .secret-post { border-bottom: 1px solid #30264f; padding: 18px 0; }
@@ -426,10 +426,6 @@
             <div class="title-line"></div>
         </div>
         <div class="secret-editor content-editor" id="secretContent" contenteditable="true" data-placeholder="비밀 글 내용을 입력하세요..."></div>
-        <div style="display:flex; gap:8px; margin:12px 0 34px; flex-wrap:wrap;">
-            <button class="secret-btn" onclick="publishSecretPost()">비밀 글 등록</button>
-            <button class="secret-btn secondary" onclick="clearSecretForm()">비우기</button>
-        </div>
         <h3 style="margin-bottom:8px; border-top:1px solid #30264f; padding-top:24px;">비밀 글 목록</h3>
         <div id="secretPostList"></div>
     </div>
