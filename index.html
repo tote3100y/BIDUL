@@ -216,6 +216,9 @@
         .secret-header { background: #0b0912; border-bottom: 1px solid #38305d; color: #f2efff; }
         .secret-header .logo-text, .secret-header .icon-btn { color: #c4b5fd; }
         .secret-page { margin: 163px auto 0; width: 820px; max-width: 100%; min-height: calc(100vh - 163px); padding: 40px 60px 70px; background: #0d0b16; border-left: 1px solid #30264f; border-right: 1px solid #30264f; color: #f2efff; }
+        .secret-header.secret-home-mode .toolbar-row-2, .secret-header.secret-home-mode .toolbar-row-3 { display:none; }
+        .secret-home-intro { margin-bottom: 26px; padding-bottom: 20px; border-bottom: 1px solid #30264f; }
+        .secret-home-intro p { color:#a59bc7; margin-top:8px; }
         .secret-page h2, .secret-page h3 { color: #c4b5fd; }
         .secret-page .secret-title-input { display:block; width:100%; padding:0 0 10px; border:0; border-bottom:1px solid #49406e; background:transparent; color:#f2efff; font-size:30px; font-weight:500; outline:none; font-family:inherit; }
         .secret-page .secret-title-input::placeholder { color:#8b82aa; }
@@ -405,8 +408,9 @@
                 <span class="logo-text">BIDUL · SECRET</span>
             </div>
             <div class="action-buttons">
-                <button class="secret-btn secondary" onclick="clearSecretForm()">새 글</button>
-                <button class="secret-btn" onclick="publishSecretPost()">비밀 글 등록</button>
+                <button class="secret-btn secondary" id="secretHomeButton" onclick="showSecretHome()" style="display:none;">비밀 홈</button>
+                <button class="secret-btn secondary" id="secretNewButton" onclick="clearSecretForm()">새 글 작성</button>
+                <button class="secret-btn" id="secretPublishButton" onclick="publishSecretPost()" style="display:none;">비밀 글 등록</button>
             </div>
         </div>
         <div class="toolbar-row-2">
@@ -420,14 +424,19 @@
             <select class="size-select" id="secretSizeSelect" onchange="updateStyle()"><option value="13px">13 ▾</option><option value="16px" selected>16 ▾</option><option value="19px">19 ▾</option><option value="24px">24 ▾</option></select>
         </div>
     </div>
-    <div class="secret-page hidden" id="secretPage">
+    <div class="secret-page hidden" id="secretHomePage">
+        <div class="secret-home-intro">
+            <h2 style="font-weight:500; margin:0;">비밀 글 보관함</h2>
+            <p>나만의 비밀 기록을 모아두는 공간</p>
+        </div>
+        <div id="secretPostList"></div>
+    </div>
+    <div class="secret-page hidden" id="secretWritePage">
         <div class="title-area">
             <input class="secret-title-input" id="secretTitle" type="text" placeholder="비밀 글 제목">
             <div class="title-line"></div>
         </div>
         <div class="secret-editor content-editor" id="secretContent" contenteditable="true" data-placeholder="비밀 글 내용을 입력하세요..."></div>
-        <h3 style="margin-bottom:8px; border-top:1px solid #30264f; padding-top:24px;">비밀 글 목록</h3>
-        <div id="secretPostList"></div>
     </div>
 
     <!-- 링크 모달 -->
@@ -916,7 +925,7 @@
         }
 
         function hideAll() {
-            ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage', 'secretHeader', 'secretPage']
+            ['homeHeader', 'writeHeader', 'viewHeader', 'homePage', 'writePage', 'viewPage', 'secretHeader', 'secretHomePage', 'secretWritePage']
                 .forEach(id => document.getElementById(id).classList.add('hidden'));
         }
 
@@ -935,8 +944,9 @@
                 hideAll();
                 document.body.classList.add('secret-mode');
                 editor = document.getElementById('secretContent');
-                document.getElementById('secretHeader').classList.remove('hidden');
-                document.getElementById('secretPage').classList.remove('hidden');
+                const header = document.getElementById('secretHeader');
+                header.classList.remove('hidden');
+                showSecretHome();
                 renderSecretPosts();
             } else {
                 document.body.classList.remove('secret-mode');
@@ -945,7 +955,29 @@
             }
         }
 
+        function showSecretHome() {
+            document.getElementById('secretHomePage').classList.remove('hidden');
+            document.getElementById('secretWritePage').classList.add('hidden');
+            const header = document.getElementById('secretHeader');
+            header.classList.add('secret-home-mode');
+            document.getElementById('secretHomeButton').style.display = 'none';
+            document.getElementById('secretNewButton').style.display = '';
+            document.getElementById('secretPublishButton').style.display = 'none';
+            renderSecretPosts();
+        }
+
+        function showSecretWrite() {
+            document.getElementById('secretHomePage').classList.add('hidden');
+            document.getElementById('secretWritePage').classList.remove('hidden');
+            const header = document.getElementById('secretHeader');
+            header.classList.remove('secret-home-mode');
+            document.getElementById('secretHomeButton').style.display = '';
+            document.getElementById('secretNewButton').style.display = 'none';
+            document.getElementById('secretPublishButton').style.display = '';
+        }
+
         function clearSecretForm() {
+            showSecretWrite();
             editingSecretPostId = null;
             document.getElementById('secretTitle').value = '';
             document.getElementById('secretContent').innerHTML = '';
@@ -970,7 +1002,7 @@
                 await dbSet('secretPosts', next);
                 secretPosts = next;
                 clearSecretForm();
-                renderSecretPosts();
+                showSecretHome();
                 showToast(existing ? '비밀 글이 수정되었습니다.' : '비밀 글이 등록되었습니다.');
             } catch (error) { showStorageError(error); }
         }
@@ -978,6 +1010,7 @@
         function editSecretPost(id) {
             const post = secretPosts.find(item => item.id === id);
             if (!post) return;
+            showSecretWrite();
             editingSecretPostId = id;
             document.getElementById('secretTitle').value = post.title || '';
             document.getElementById('secretContent').innerHTML = post.content || '';
@@ -985,7 +1018,7 @@
             if (publishButton) publishButton.textContent = '수정 저장';
             editor = document.getElementById('secretContent');
             document.getElementById('secretTitle').focus();
-            document.getElementById('secretPage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('secretWritePage').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         async function deleteSecretPost(id) {
