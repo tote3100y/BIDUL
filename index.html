@@ -453,6 +453,7 @@
         // IndexedDB는 localStorage보다 큰 데이터를 저장할 수 있어 사진이 포함된 글에 적합합니다.
         let posts = [];
         let secretPosts = [];
+        let editingSecretPostId = null;
         let secretIconClicks = 0;
         let secretSpaceOpen = false;
         let currentViewId = null;
@@ -945,24 +946,46 @@
         }
 
         function clearSecretForm() {
+            editingSecretPostId = null;
             document.getElementById('secretTitle').value = '';
             document.getElementById('secretContent').innerHTML = '';
+            const publishButton = document.querySelector('#secretHeader .action-buttons .secret-btn:not(.secondary)');
+            if (publishButton) publishButton.textContent = '비밀 글 등록';
             editor = document.getElementById('secretContent');
             document.getElementById('secretTitle').focus();
         }
 
         async function publishSecretPost() {
             const title = document.getElementById('secretTitle').value.trim();
-            const content = getPersistableContent(document.getElementById('secretContent')); 
+            const content = getPersistableContent(document.getElementById('secretContent'));
             if (!title) { alert('비밀 글 제목을 입력하세요.'); return; }
-            const next = [...secretPosts, { id: Date.now(), title, content, date: new Date().toLocaleDateString() }];
+            const existing = editingSecretPostId !== null ? secretPosts.find(post => post.id === editingSecretPostId) : null;
+            const savedPost = existing
+                ? { ...existing, title, content, updatedDate: new Date().toLocaleDateString() }
+                : { id: Date.now(), title, content, date: new Date().toLocaleDateString() };
+            const next = existing
+                ? secretPosts.map(post => post.id === editingSecretPostId ? savedPost : post)
+                : [...secretPosts, savedPost];
             try {
                 await dbSet('secretPosts', next);
                 secretPosts = next;
                 clearSecretForm();
                 renderSecretPosts();
-                showToast('비밀 글이 등록되었습니다.');
+                showToast(existing ? '비밀 글이 수정되었습니다.' : '비밀 글이 등록되었습니다.');
             } catch (error) { showStorageError(error); }
+        }
+
+        function editSecretPost(id) {
+            const post = secretPosts.find(item => item.id === id);
+            if (!post) return;
+            editingSecretPostId = id;
+            document.getElementById('secretTitle').value = post.title || '';
+            document.getElementById('secretContent').innerHTML = post.content || '';
+            const publishButton = document.querySelector('#secretHeader .action-buttons .secret-btn:not(.secondary)');
+            if (publishButton) publishButton.textContent = '수정 저장';
+            editor = document.getElementById('secretContent');
+            document.getElementById('secretTitle').focus();
+            document.getElementById('secretPage').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         async function deleteSecretPost(id) {
@@ -971,7 +994,9 @@
             try {
                 await dbSet('secretPosts', next);
                 secretPosts = next;
+                if (editingSecretPostId === id) clearSecretForm();
                 renderSecretPosts();
+                showToast('비밀 글을 삭제했습니다.');
             } catch (error) { showStorageError(error); }
         }
 
@@ -986,11 +1011,24 @@
             [...secretPosts].reverse().forEach(post => {
                 const item = document.createElement('article');
                 item.className = 'secret-post';
-                const title = document.createElement('div'); title.className = 'secret-post-title'; title.textContent = post.title || '(제목 없음)';
+                const title = document.createElement('button');
+                title.type = 'button'; title.className = 'secret-post-title';
+                title.style.cssText = 'display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;font:inherit;color:#c4b5fd;';
+                title.textContent = '▸ ' + (post.title || '(제목 없음)');
                 const date = document.createElement('div'); date.className = 'secret-post-date'; date.textContent = post.date || '';
+                const details = document.createElement('div'); details.hidden = true;
                 const content = document.createElement('div'); content.className = 'secret-post-content'; content.innerHTML = post.content || '';
-                const remove = document.createElement('button'); remove.className = 'secret-btn secondary'; remove.textContent = '삭제'; remove.style.marginTop = '12px'; remove.onclick = () => deleteSecretPost(post.id);
-                item.append(title, date, content, remove); list.appendChild(item);
+                const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
+                const edit = document.createElement('button'); edit.className = 'secret-btn secondary'; edit.textContent = '수정'; edit.onclick = () => editSecretPost(post.id);
+                const remove = document.createElement('button'); remove.className = 'secret-btn secondary'; remove.textContent = '삭제'; remove.onclick = () => deleteSecretPost(post.id);
+                actions.append(edit, remove);
+                details.append(content, actions);
+                title.onclick = () => {
+                    details.hidden = !details.hidden;
+                    title.textContent = (details.hidden ? '▸ ' : '▾ ') + (post.title || '(제목 없음)');
+                };
+                item.append(title, date, details);
+                list.appendChild(item);
             });
         }
 
