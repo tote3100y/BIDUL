@@ -1050,7 +1050,13 @@
                 title.textContent = '▸ ' + (post.title || '(제목 없음)');
                 const date = document.createElement('div'); date.className = 'secret-post-date'; date.textContent = post.date || '';
                 const details = document.createElement('div'); details.hidden = true;
-                const content = document.createElement('div'); content.className = 'secret-post-content'; content.innerHTML = post.content || '';
+                const content = document.createElement('div');
+                content.className = 'secret-post-content';
+                content.contentEditable = 'false';
+                content.innerHTML = post.content || '';
+                // 저장된 본문 안에 편집 가능한 요소 속성이 남아 있더라도
+                // 홈 화면의 미리보기에서는 절대 직접 수정되지 않게 합니다.
+                content.querySelectorAll('[contenteditable]').forEach(node => node.removeAttribute('contenteditable'));
                 const actions = document.createElement('div'); actions.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
                 const edit = document.createElement('button'); edit.className = 'secret-btn secondary'; edit.textContent = '수정'; edit.onclick = () => editSecretPost(post.id);
                 const remove = document.createElement('button'); remove.className = 'secret-btn secondary'; remove.textContent = '삭제'; remove.onclick = () => deleteSecretPost(post.id);
@@ -1218,13 +1224,44 @@
 
         async function insertImageFile(file) {
             const dataUrl = await imageFileToDataURL(file);
-            restoreSelection();
-            const imageHtml = `<img src="${dataUrl}" alt=""><p><br></p>`;
-            const inserted = document.execCommand('insertHTML', false, imageHtml);
-            if (!inserted) {
-                throw new Error('현재 커서 위치에 이미지를 삽입하지 못했습니다.');
+            const targetEditor = editor;
+            if (!targetEditor) throw new Error('이미지를 넣을 편집 영역을 찾지 못했습니다.');
+
+            // 이미지 파일은 호출 순서대로 현재 커서 뒤에 직접 삽입합니다.
+            // 각 삽입 후 커서를 다음 위치로 옮기므로 여러 장을 선택해도 순서가 뒤집히지 않습니다.
+            targetEditor.focus();
+            let range = savedRange;
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const currentRange = selection.getRangeAt(0);
+                if (targetEditor.contains(currentRange.startContainer) || currentRange.startContainer === targetEditor) {
+                    range = currentRange.cloneRange();
+                }
             }
-            saveSelection();
+            if (!range || !(targetEditor.contains(range.startContainer) || range.startContainer === targetEditor)) {
+                range = document.createRange();
+                range.selectNodeContents(targetEditor);
+                range.collapse(false);
+            }
+
+            range.deleteContents();
+            const image = document.createElement('img');
+            image.src = dataUrl;
+            image.alt = '';
+            const spacer = document.createElement('p');
+            spacer.appendChild(document.createElement('br'));
+            const fragment = document.createDocumentFragment();
+            fragment.append(image, spacer);
+            range.insertNode(fragment);
+
+            const nextRange = document.createRange();
+            nextRange.setStartAfter(spacer);
+            nextRange.collapse(true);
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(nextRange);
+            }
+            savedRange = nextRange.cloneRange();
         }
 
         async function handleImage(e) {
