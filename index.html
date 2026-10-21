@@ -228,6 +228,15 @@
         .secret-header .tool-btn, .secret-header .font-select, .secret-header .size-select { color:#d8d0ff; border-color:#49406e; background:#0d0b16; }
         .secret-page .title-line { border-color:#49406e; }
         .secret-page .content-editor a { color:#a5b4fc; }
+        /* 비밀 글 작성 중 접기 제목은 어두운 배경에서도 읽히도록 흰색으로 표시 */
+        .secret-editor .fold-header,
+        .secret-editor .fold-title {
+            color: #ffffff;
+        }
+        .secret-editor .fold-title:empty:before {
+            color: #bdb5d8;
+        }
+
         @media (max-width: 700px) { .secret-page { margin-top:163px; padding:28px 22px 60px; } .secret-page .secret-title-input { font-size:25px; } }
         .secret-btn { background: #4f46e5; border: 1px solid #7c70ff; color: #fff; padding: 9px 15px; cursor: pointer; font: inherit; }
         .secret-btn.secondary { background: #151126; border-color: #49406e; color: #d8d0ff; }
