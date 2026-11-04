@@ -834,7 +834,7 @@
 
         editor.addEventListener('drop', async (e) => {
             const files = Array.from(e.dataTransfer?.files || []);
-            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            const imageFiles = sortImageFilesByName(files.filter(file => file.type.startsWith('image/')));
             if (imageFiles.length === 0) return;
 
             e.preventDefault();
@@ -1161,6 +1161,12 @@
             document.getElementById('linkInput').value = '';
         }
 
+        // 여러 이미지를 파일명 기준 자연 정렬합니다. 예: 1, 2, 3, 10
+        function sortImageFilesByName(files) {
+            const collator = new Intl.Collator('ko', { numeric: true, sensitivity: 'base' });
+            return [...files].sort((a, b) => collator.compare(a.name, b.name));
+        }
+
         function insertImage() {
             // 현재 커서 위치에 이미지를 삽입합니다. 접기 본문 안에 커서가 있으면
             // 이미지는 별도 접기를 만들지 않고 해당 본문 안에 들어갑니다.
@@ -1274,7 +1280,7 @@
         }
 
         async function handleImage(e) {
-            const files = Array.from(e.target.files || []);
+            const files = sortImageFilesByName(Array.from(e.target.files || []));
             try {
                 for (const file of files) {
                     try {
