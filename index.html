@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIDUL</title>
-    <!-- 아이콘 설정 -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="icon.png">
+    <!-- PWA: 홈 화면 설치 및 오프라인 실행 -->
+    <meta name="theme-color" content="#08070d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="BIDUL">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./pwa-icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./pwa-icon-192.png">
 
-    <!-- Ponytail 라이브러리 연동 -->
-    <script src="https://cdn.jsdelivr.net/gh/dietrichgebert/ponytail@main/ponytail.js"></script>
+    <!-- 외부 스크립트 없이 기본 기능이 실행되며, 서비스 워커가 앱 화면을 오프라인에 보관합니다. -->
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap');
+        /* 외부 웹폰트 대신 기기에 설치된 기본 글꼴을 사용합니다. */
 
         /* 테마 변수 설정 (라이트 / 다크모드) */
         :root {
@@ -279,7 +282,7 @@
     <div class="fixed-header hidden" id="writeHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.style.display='none'">
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
@@ -341,7 +344,7 @@
     <div class="fixed-header" id="homeHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.style.display='none'">
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
@@ -368,7 +371,7 @@
     <div class="fixed-header hidden" id="viewHeader">
         <div class="toolbar-row-1">
             <div class="logo-area" onclick="goHome()">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.style.display='none'">
                 <span class="logo-text">BIDUL</span>
             </div>
             <div class="action-buttons">
@@ -413,7 +416,7 @@
     <div class="fixed-header hidden secret-header" id="secretHeader">
         <div class="toolbar-row-1">
             <div class="logo-area">
-                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3685/3685253.png'">
+                <img src="icon.png" class="logo-img" alt="BIDUL" onclick="handleSecretIconClick(event)" onerror="this.style.display='none'">
                 <span class="logo-text">BIDUL · SECRET</span>
             </div>
             <div class="action-buttons">
@@ -633,9 +636,6 @@
         });
 
         async function initializeBidul() {
-            if (typeof Ponytail !== 'undefined') {
-                try { new Ponytail('#contentEditor'); } catch (error) { console.warn('Ponytail 초기화 실패:', error); }
-            }
             try {
                 await openBidulDB();
 
@@ -1467,6 +1467,22 @@
             const t = document.getElementById('toast');
             t.innerText = msg; t.style.display = 'block';
             setTimeout(() => t.style.display = 'none', 2000);
+        }
+    </script>
+
+    <script>
+        // HTTPS(GitHub Pages 포함)에서 서비스 워커를 등록해 앱 화면을 오프라인에 보관합니다.
+        // file://로 직접 연 경우에는 서비스 워커가 지원되지 않으므로 등록을 건너뜁니다.
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .then(registration => {
+                        console.info('BIDUL 오프라인 서비스가 준비되었습니다.', registration.scope);
+                    })
+                    .catch(error => {
+                        console.warn('BIDUL 오프라인 서비스 등록 실패:', error);
+                    });
+            });
         }
     </script>
 </body>
